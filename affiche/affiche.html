@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Affiche H7 - Nuit de la Destinée</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Montserrat:wght@400;600;800&family=Bebas+Neue&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#111}
+.poster{width:1080px;height:1500px;position:relative;overflow:hidden;color:#fff;font-family:'Montserrat',sans-serif;
+ background:
+  radial-gradient(circle at 18% 12%,rgba(255,60,200,.55),transparent 38%),
+  radial-gradient(circle at 85% 30%,rgba(120,70,255,.6),transparent 42%),
+  radial-gradient(circle at 50% 95%,rgba(255,150,30,.35),transparent 40%),
+  linear-gradient(170deg,#3a0f7a 0%,#1d1458 45%,#0b0a2e 100%)}
+.bokeh{position:absolute;border-radius:50%;filter:blur(6px);opacity:.35}
+.top{position:absolute;top:44px;left:0;right:0;text-align:center}
+.top .church{font-family:'Cinzel',serif;font-weight:900;font-size:34px;letter-spacing:4px;text-shadow:0 2px 12px #000}
+.top .sub{margin-top:8px;font-size:17px;letter-spacing:9px;color:#f6c453;font-weight:600}
+.title{position:absolute;top:160px;left:0;right:0;text-align:center}
+.h7{font-family:'Cinzel',serif;font-weight:900;font-size:300px;line-height:1;letter-spacing:6px;
+ background:linear-gradient(180deg,#fff6c8 0%,#f6c453 35%,#b8741a 62%,#ffe08a 85%,#9a5b10 100%);
+ -webkit-background-clip:text;background-clip:text;color:transparent;
+ filter:drop-shadow(0 6px 0 #5a3305) drop-shadow(0 18px 28px rgba(0,0,0,.7))}
+.theme{margin-top:-10px}
+.theme small{display:inline-block;background:#d3122a;font-weight:800;letter-spacing:5px;font-size:20px;padding:6px 22px;transform:skewX(-12deg)}
+.theme h2{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:118px;letter-spacing:6px;line-height:1.05;margin-top:10px;
+ background:linear-gradient(180deg,#fff,#cfd3e6 50%,#8d92b3);-webkit-background-clip:text;background-clip:text;color:transparent;
+ filter:drop-shadow(0 6px 14px rgba(0,0,0,.65))}
+.speakers{position:absolute;top:765px;left:30px;right:30px;display:flex;gap:14px;justify-content:center}
+.card{flex:1;height:420px;border-radius:26px;overflow:hidden;position:relative;
+ background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.08));border:2px solid rgba(255,255,255,.35);box-shadow:0 12px 30px rgba(0,0,0,.45)}
+.card img{width:100%;height:100%;object-fit:cover;object-position:50% 12%}
+.card.ph{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:rgba(255,255,255,.7);font-size:15px;font-weight:600;text-align:center;padding:10px}
+.card.ph svg{width:90px;opacity:.55}
+.card .name{position:absolute;left:0;right:0;bottom:0;padding:34px 8px 12px;text-align:center;
+ background:linear-gradient(180deg,transparent,rgba(10,6,40,.95) 60%)}
+.card .name b{display:block;font-size:13px;letter-spacing:2px;color:#f6c453;font-weight:800;text-transform:uppercase}
+.card .name span{display:block;font-size:19px;font-weight:800;line-height:1.15;margin-top:3px;text-transform:uppercase}
+.info{position:absolute;left:60px;right:60px;top:1215px;display:flex;gap:22px;align-items:stretch}
+.date{flex:0 0 330px;border-radius:24px;background:linear-gradient(160deg,#ff9a1f,#ff5a1f);padding:20px 18px;text-align:center;box-shadow:0 10px 26px rgba(0,0,0,.5)}
+.date .d{font-family:'Bebas Neue',sans-serif;font-size:70px;line-height:1}
+.date .m{font-weight:800;letter-spacing:4px;font-size:20px;margin-top:6px}
+.hours{flex:1;border-radius:24px;border:2px solid rgba(255,255,255,.35);background:rgba(8,6,40,.6);padding:20px 24px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+.hours .row{display:flex;align-items:center;gap:14px;font-size:26px;font-weight:800}
+.hours .row i{font-style:normal;font-size:15px;letter-spacing:3px;color:#f6c453;font-weight:800;min-width:100px}
+.tbd{color:#ffd37a}
+.foot{position:absolute;left:0;right:0;bottom:0;height:130px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.65));text-align:center;padding-top:40px}
+.foot .welcome{letter-spacing:11px;font-size:15px;color:#c9c4ee;margin-bottom:12px}
+.foot .addr{font-size:27px;font-weight:800;letter-spacing:1px}
+.foot .addr em{font-style:normal;color:#f6c453}
+</style></head><body>
+<div class="poster">
+  <div class="bokeh" style="width:160px;height:160px;left:-40px;top:520px;background:#ff4bd8"></div>
+  <div class="bokeh" style="width:110px;height:110px;right:40px;top:90px;background:#8f6bff"></div>
+  <div class="bokeh" style="width:200px;height:200px;right:-60px;top:640px;background:#ff9a1f;opacity:.25"></div>
+
+  <div class="top"><div class="church">ÉGLISE ÉVANGÉLIQUE BETHEL</div><div class="sub">PRÉSENTE</div></div>
+
+  <div class="title">
+    <div class="h7">H7</div>
+    <div class="theme"><small>THÈME</small><h2>NUIT DE LA DESTINÉE</h2></div>
+  </div>
+
+  <div class="speakers">
+    <div class="card ph"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5z"/></svg>Photo à ajouter
+      <div class="name"><b>Prophète</b><span>Daniel Grâce</span></div></div>
+    <div class="card ph"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5z"/></svg>Photo à ajouter
+      <div class="name"><b>&nbsp;</b><span>Bruno Kayumba</span></div></div>
+    <div class="card ph"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-4 0-8 2-8 5v2h16v-2c0-3-4-5-8-5z"/></svg>Photo à ajouter
+      <div class="name"><b>Prophète</b><span>Grâce</span></div></div>
+    <div class="card"><img src="photos/losambo.jpg" alt="">
+      <div class="name"><b>Prophète</b><span>Élysée Losambo</span></div></div>
+    <div class="card"><img src="photos/paulin.jpg" alt="">
+      <div class="name"><b>Adorateur</b><span>Paulin Mutombo</span></div></div>
+  </div>
+
+  <div class="info">
+    <div class="date"><div class="d tbd" style="color:#fff">DATE</div><div class="m">À CONFIRMER</div></div>
+    <div class="hours">
+      <div class="row"><i>HORAIRE</i><span class="tbd">À CONFIRMER</span></div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <div class="welcome">BIENVENUE &nbsp;|&nbsp; WELCOME</div>
+    <div class="addr">AV. <em>MUKULAKULU</em> — RÉF. ARRÊT CABINE</div>
+  </div>
+</div>
+</body></html>
