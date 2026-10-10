@@ -5,6 +5,7 @@ Application web (PWA) sans serveur : ouvre `reseau/index.html` depuis GitHub Pag
 - **Contacts** : recherche, filtre par domaine, tri par distance / ajout récent / à relancer, appel, SMS, WhatsApp, email, itinéraire.
 - **Carte** : tes contacts sur OpenStreetMap, avec ta position et un rayon (1 à 100 km) pour voir qui est près de toi.
 - **Domaines** : pour chaque domaine, la liste de ceux que tu peux appeler.
+- **Coach** : chaque jour, des suggestions pour cultiver ton réseau (relancer, présenter deux contacts, combler un domaine vide, rendre un service, écrire une anecdote, poser une question à un expert, surprendre quelqu'un), des jauges de progression et une anecdote à raconter. Les suggestions sont calculées dans le navigateur à partir de tes contacts, sans serveur ni IA.
 - **Fiche** : rôle, comment vous vous êtes connus, anecdote à retenir, services dus/rendus, dernier contact.
 - **Import / export** : sauvegarde `.json`, import `.vcf` (export Google Contacts).
 

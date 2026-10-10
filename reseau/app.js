@@ -348,11 +348,254 @@ function renderMap(fit) {
   }
 }
 
+/* ---------- Coach : suggestions pour cultiver ton réseau ---------- */
+
+const COACH_KEY = 'reseau.coach.v1';
+const COMMON_DOMAINS = [
+  'juridique', 'santé', 'finance', 'immobilier', 'transport', 'sécurité', 'administration', 'médias',
+  'éducation', 'informatique', 'artisanat', 'restauration', 'voyage', 'politique', 'commerce', 'énergie',
+];
+const TRAITS = { reseau: 'Réseau', anecdote: 'Anecdotes', savoir: 'Savoir', imprevu: 'Imprévisible' };
+const QUESTIONS = [
+  'Quelle erreur les débutants font-ils le plus souvent dans ton métier ?',
+  'Qui sont les trois personnes qui comptent vraiment dans ton milieu ?',
+  'Qu’est-ce que personne ne sait de l’extérieur sur ton métier ?',
+  'Quel problème revient sans cesse chez tes clients, et qui sait le résoudre ?',
+  'Si tu devais me faire gagner un an dans ce domaine, que me conseillerais-tu ?',
+];
+
+function loadHidden() {
+  try {
+    const hidden = JSON.parse(localStorage.getItem(COACH_KEY) || '{}').hidden || {};
+    const now = Date.now();
+    return Object.fromEntries(Object.entries(hidden).filter(([, until]) => until > now));
+  } catch { return {}; }
+}
+
+function hideSuggestion(id, days) {
+  const hidden = loadHidden();
+  hidden[id] = Date.now() + days * 86400000;
+  try { localStorage.setItem(COACH_KEY, JSON.stringify({ hidden })); } catch { /* ignoré */ }
+}
+
+// Générateur pseudo-aléatoire stable pour une graine donnée (ici : la date du jour).
+function seededRandom(seed) {
+  let a = 0;
+  for (const ch of seed) a = (a * 31 + ch.charCodeAt(0)) >>> 0;
+  return () => {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildSuggestions() {
+  const rnd = seededRandom(today());
+  const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
+  const cs = state.contacts;
+  const out = [];
+  const add = (sg) => out.push({ ...sg, score: sg.score + rnd() * 8 });
+  const openC = (c) => ({ label: 'Ouvrir la fiche', run: () => openDetail(c.id) });
+  const editC = (c) => ({ label: 'Compléter', run: () => openForm(c.id) });
+  const newIn = (label) => ({ label: 'Ajouter un contact', run: () => openForm(null, { domains: [label] }) });
+
+  if (cs.length === 0) {
+    add({ id: 'start', trait: 'reseau', score: 100, title: 'Commence ton carnet',
+      text: 'Ajoute les 10 premières personnes qui te viennent à l’esprit, dans tous les domaines : famille, amis, collègues, voisins, artisans, anciens camarades.',
+      action: { label: 'Ajouter un contact', run: () => openForm() } });
+    return out;
+  }
+
+  for (const c of cs) {
+    const since = daysSince(c.last);
+    const d = distTo(c);
+    const age = Math.floor((Date.now() - c.createdAt) / 86400000);
+
+    if (c.favor === 'owe') {
+      add({ id: 'owe:' + c.id, trait: 'reseau', score: 90, contact: c, action: openC(c),
+        title: `Rends le service à ${c.name}`,
+        text: 'Tu dois un service à ce contact. La confiance se construit là-dessus : ne laisse pas traîner.' });
+    }
+    if (since != null && since >= RELANCE_DAYS) {
+      add({ id: 'relance:' + c.id, trait: 'reseau', score: 80 + Math.min(since / 10, 15), contact: c, touch: true, action: openC(c),
+        title: `Relance ${c.name}`,
+        text: `Dernier contact il y a ${since} jours. Un message court (une nouvelle, une question, un coup de main proposé) suffit à garder le lien.` });
+    } else if (since == null && age >= 14) {
+      add({ id: 'jamais:' + c.id, trait: 'reseau', score: 50, contact: c, touch: true, action: openC(c),
+        title: `Prends des nouvelles de ${c.name}`,
+        text: 'Aucun échange noté pour l’instant. Écris un message, puis note la date dans la fiche.' });
+    }
+    if (d != null && d <= 5 && (since == null || since >= 30)) {
+      add({ id: 'proche:' + c.id, trait: 'reseau', score: 65, contact: c, touch: true, action: openC(c),
+        title: `${c.name} est à ${fmtDist(d)} de toi`,
+        text: 'Propose un café ou un passage rapide : un lien se nourrit surtout en face à face.' });
+    }
+    if (c.favor === 'owed') {
+      add({ id: 'owed:' + c.id, trait: 'reseau', score: 30, contact: c, action: openC(c),
+        title: `${c.name} te doit un service`,
+        text: 'Garde en tête ce que tu pourrais lui demander le jour où tu en auras besoin, et note-le dans la fiche.' });
+    }
+    if (!c.domains.length) {
+      add({ id: 'nodom:' + c.id, trait: 'reseau', score: 55, contact: c, action: editC(c),
+        title: `Ajoute un domaine à ${c.name}`,
+        text: 'Sans domaine, ce contact n’apparaîtra pas quand tu chercheras « qui contacter pour… ».' });
+    }
+    if (!hasCoords(c)) {
+      add({ id: 'noloc:' + c.id, trait: 'reseau', score: 30, contact: c, action: editC(c),
+        title: `Localise ${c.name}`,
+        text: 'Ajoute un lieu : tu verras ce contact sur la carte et tu sauras quand tu es dans les parages.' });
+    }
+    if (!c.anecdote) {
+      add({ id: 'anec:' + c.id, trait: 'anecdote', score: 48, contact: c, action: editC(c),
+        title: `Écris l’anecdote de ${c.name}`,
+        text: 'Une histoire vécue avec ce contact, en trois phrases (situation, tension, chute), sera ta meilleure carte pour illustrer un point ou le présenter.' });
+    }
+  }
+
+  const withAnec = cs.filter((c) => c.anecdote).length;
+  if (withAnec < 10) {
+    const first = cs.find((c) => !c.anecdote);
+    add({ id: 'anec-goal', trait: 'anecdote', score: 52, action: first ? editC(first) : null,
+      title: `Anecdotes : ${withAnec} sur 10`,
+      text: 'Vise dix histoires que tu racontes sans effort. Choisis-en une et raconte-la à voix haute aujourd’hui, à quelqu’un ou seul.' });
+  }
+
+  const covered = new Set(cs.flatMap((c) => c.domains.map(norm)));
+  const gaps = COMMON_DOMAINS.filter((dm) => !covered.has(norm(dm)));
+  for (let i = 0; i < 2 && gaps.length; i++) {
+    const label = gaps.splice(Math.floor(rnd() * gaps.length), 1)[0];
+    add({ id: 'gap:' + norm(label), trait: 'reseau', score: 60, action: newIn(label),
+      title: `Aucun contact en « ${label} »`,
+      text: 'Demande autour de toi qui pourrait te présenter quelqu’un dans ce domaine. Un seul contact bien placé ouvre beaucoup de portes.' });
+  }
+
+  for (const dm of allDomains()) {
+    if (dm.count === 1) {
+      add({ id: 'thin:' + dm.key, trait: 'reseau', score: 45, action: newIn(dm.label),
+        title: `Un seul contact en « ${dm.label} »`,
+        text: 'Si cette personne est injoignable, tu n’as plus personne. Trouve un deuxième contact dans ce domaine.' });
+    }
+  }
+
+  const pool = cs.slice(0, 300);
+  const pairs = [];
+  for (let i = 0; i < pool.length; i++) {
+    for (let j = i + 1; j < pool.length; j++) {
+      const a = pool[i], b = pool[j];
+      if (!a.domains.length || !b.domains.length) continue;
+      if (a.domains.some((x) => inDomain(b, norm(x)))) continue;
+      const sameCity = (a.place && norm(a.place) === norm(b.place)) || (hasCoords(a) && hasCoords(b) && distKm(a, b) < 15);
+      if (sameCity) pairs.push([a, b]);
+    }
+  }
+  if (pairs.length) {
+    const [a, b] = pick(pairs);
+    add({ id: `intro:${a.id}:${b.id}`, trait: 'reseau', score: 58, contact: a, action: openC(a),
+      title: `Présente ${a.name} à ${b.name}`,
+      text: `Ils sont au même endroit mais dans des domaines différents (${a.domains[0]} et ${b.domains[0]}). Faire se rencontrer deux contacts, c’est devenir le point de passage.` });
+  }
+
+  const withDom = cs.filter((c) => c.domains.length);
+  if (withDom.length) {
+    const c = pick(withDom);
+    add({ id: 'learn:' + c.id, trait: 'savoir', score: 50, contact: c, touch: true, action: openC(c),
+      title: `Apprends quelque chose de ${c.name}`,
+      text: `Domaine : ${c.domains[0]}. Pose-lui cette question : « ${pick(QUESTIONS)} » Puis note la réponse dans sa fiche.` });
+  }
+
+  const stale = cs.filter((c) => { const sn = daysSince(c.last); return sn == null || sn >= 30; });
+  if (stale.length) {
+    const c = pick(stale);
+    add({ id: 'imprevu:' + c.id, trait: 'imprevu', score: 42, contact: c, touch: true, action: openC(c),
+      title: `Surprends ${c.name}`,
+      text: 'Écris sans raison précise : une idée, un article, une photo, une blague. Sois imprévisible dans ta façon de faire, jamais dans ta parole.' });
+  }
+
+  // Au plus 2 suggestions par type, hors suggestions masquées.
+  const hidden = loadHidden();
+  const perKind = {};
+  return out
+    .filter((sg) => !hidden[sg.id])
+    .sort((x, y) => y.score - x.score)
+    .filter((sg) => {
+      const kind = sg.id.split(':')[0];
+      perKind[kind] = (perKind[kind] || 0) + 1;
+      return perKind[kind] <= 2;
+    });
+}
+
+function meter(label, value, ratio) {
+  const pct = Math.round(Math.max(0, Math.min(1, ratio)) * 100);
+  const bar = h('i');
+  bar.style.width = pct + '%';
+  return h('div', { class: 'meter' },
+    h('div', { class: 'meter-top' }, h('span', null, label), h('span', { class: 'muted' }, value)),
+    h('div', { class: 'bar', role: 'progressbar', 'aria-label': label, 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(pct) }, bar));
+}
+
+function suggestionCard(sg) {
+  const refresh = () => renderCoach();
+  return h('article', { class: 'card' },
+    h('span', { class: 'tag trait-' + sg.trait }, TRAITS[sg.trait]),
+    h('h3', null, sg.title),
+    h('p', null, sg.text),
+    h('div', { class: 'card-actions' },
+      sg.action ? h('button', { class: 'btn primary small', type: 'button', onclick: sg.action.run }, sg.action.label) : null,
+      h('button', { class: 'btn small', type: 'button', onclick: () => {
+        if (sg.touch && sg.contact) touchContact(sg.contact.id);
+        hideSuggestion(sg.id, 14);
+        toast('Bien joué.');
+        refresh();
+      } }, 'Fait'),
+      h('button', { class: 'btn small', type: 'button', onclick: () => { hideSuggestion(sg.id, 3); refresh(); } }, 'Passer')));
+}
+
+let coachMore = false;
+
+function renderCoach() {
+  const box = $('#coach');
+  const cs = state.contacts;
+  const list = buildSuggestions();
+  const shown = coachMore ? list : list.slice(0, 5);
+
+  const withAnec = cs.filter((c) => c.anecdote);
+  let anecdote = null;
+  if (withAnec.length) {
+    const c = withAnec[Math.floor(seededRandom(today() + 'a')() * withAnec.length)];
+    anecdote = h('article', { class: 'card' },
+      h('span', { class: 'tag trait-anecdote' }, 'Anecdote du jour'),
+      h('h3', null, c.name),
+      h('p', null, c.anecdote),
+      h('p', { class: 'muted' }, 'Entraîne-toi : raconte-la à voix haute en 30 secondes, avec une chute.'));
+  }
+
+  const n = cs.length;
+  const covered = COMMON_DOMAINS.filter((dm) => cs.some((c) => inDomain(c, norm(dm)))).length;
+  const kept = cs.filter((c) => { const sn = daysSince(c.last); return sn != null && sn < RELANCE_DAYS; }).length;
+  const located = cs.filter(hasCoords).length;
+
+  box.replaceChildren(...[
+    h('h2', null, 'À faire aujourd’hui'),
+    list.length === 0 ? h('p', { class: 'muted' }, 'Rien d’urgent. Ton réseau est bien entretenu, beau travail.') : null,
+    ...shown.map(suggestionCard),
+    list.length > 5 ? h('button', { class: 'btn', type: 'button', onclick: () => { coachMore = !coachMore; renderCoach(); } }, coachMore ? 'Voir moins' : `Voir les ${list.length - 5} autres`) : null,
+    anecdote,
+    h('h2', { class: 'section' }, 'Ton niveau'),
+    h('div', { class: 'card meters' },
+      meter('Réseau', `${n} / 50 contacts`, n / 50),
+      meter('Domaines couverts', `${covered} / ${COMMON_DOMAINS.length}`, covered / COMMON_DOMAINS.length),
+      meter('Liens entretenus (moins de 90 j)', `${kept} / ${n}`, n ? kept / n : 0),
+      meter('Anecdotes', `${withAnec.length} / 10`, withAnec.length / 10),
+      meter('Contacts localisés', `${located} / ${n}`, n ? located / n : 0)),
+  ].filter(Boolean));
+}
+
 /* ---------- Navigation ---------- */
 
 function show(view) {
   state.view = view;
-  for (const name of ['contacts', 'map', 'domains']) $('#view-' + name).hidden = name !== view;
+  for (const name of ['contacts', 'map', 'domains', 'coach']) $('#view-' + name).hidden = name !== view;
   document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('active', b.dataset.view === view));
   window.scrollTo(0, 0);
   render(true);
@@ -361,6 +604,7 @@ function show(view) {
 function render(fit) {
   if (state.view === 'contacts') renderContacts();
   else if (state.view === 'domains') renderDomains();
+  else if (state.view === 'coach') renderCoach();
   else {
     renderMapDomains();
     renderMap(fit);
@@ -453,12 +697,17 @@ function openDetail(id) {
   if (!$('#dlg-detail').open) $('#dlg-detail').showModal();
 }
 
-function markContacted(id) {
+function touchContact(id) {
   const c = state.contacts.find((x) => x.id === id);
-  if (!c) return;
+  if (!c) return false;
   c.last = today();
   c.updatedAt = Date.now();
   save();
+  return true;
+}
+
+function markContacted(id) {
+  if (!touchContact(id)) return;
   render();
   openDetail(id);
   toast('Noté : contacté aujourd’hui.');
@@ -496,14 +745,14 @@ function renderSuggest() {
   }, d.label)));
 }
 
-function openForm(id) {
+function openForm(id, prefill) {
   const c = id ? state.contacts.find((x) => x.id === id) : null;
   state.editingId = c ? c.id : null;
   $('#form-title').textContent = c ? 'Modifier le contact' : 'Nouveau contact';
   F('name').value = c ? c.name : '';
   F('phone').value = c ? c.phone : '';
   F('email').value = c ? c.email : '';
-  F('domains').value = c ? c.domains.join(', ') : '';
+  F('domains').value = c ? c.domains.join(', ') : (prefill && prefill.domains ? prefill.domains.join(', ') : '');
   F('role').value = c ? c.role : '';
   F('place').value = c ? c.place : '';
   F('how').value = c ? c.how : '';

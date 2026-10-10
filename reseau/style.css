@@ -162,7 +162,7 @@ details.dom .row { background: var(--bg); }
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   background: var(--surface); border-top: 1px solid var(--border);
 }
 .tabs button {
@@ -239,3 +239,23 @@ dialog::backdrop { background: rgba(2, 6, 23, .55); }
 }
 
 .leaflet-container { font: inherit; }
+
+/* Coach */
+#coach { display: grid; gap: 12px; }
+#coach h2.section { margin-top: 12px; }
+.card {
+  display: grid; gap: 6px; padding: 14px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.card h3 { margin: 0; font-size: 1rem; overflow-wrap: anywhere; }
+.card p { margin: 0; overflow-wrap: anywhere; }
+.card .tag { justify-self: start; margin: 0; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.trait-reseau { background: color-mix(in srgb, var(--accent) 18%, transparent); }
+.trait-anecdote { background: color-mix(in srgb, #f59e0b 25%, transparent); }
+.trait-savoir { background: color-mix(in srgb, #10b981 22%, transparent); }
+.trait-imprevu { background: color-mix(in srgb, #ec4899 22%, transparent); }
+.meters { gap: 14px; }
+.meter-top { display: flex; justify-content: space-between; gap: 8px; font-size: .9rem; margin-bottom: 4px; }
+.bar { height: 8px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
