@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DebtController;
+use App\Http\Controllers\Api\DossierController;
+use App\Http\Controllers\Api\DossierFileController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\GoalController;
 use App\Http\Controllers\Api\HabitController;
@@ -13,6 +15,7 @@ use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\PasskeyController;
 use App\Http\Controllers\Api\ProgramController;
 use App\Http\Controllers\Api\PushController;
+use App\Http\Controllers\Api\VaultController;
 use Illuminate\Support\Facades\Route;
 
 $date = '\d{4}-\d{2}-\d{2}';
@@ -86,6 +89,25 @@ Route::prefix('api')->group(function () use ($date) {
         Route::post('passkeys/options', [PasskeyController::class, 'registerOptions']);
         Route::post('passkeys', [PasskeyController::class, 'register']);
         Route::delete('passkeys/{id}', [PasskeyController::class, 'destroy'])->whereNumber('id');
+
+        Route::get('vault', [VaultController::class, 'status']);
+        Route::post('vault/unlock', [VaultController::class, 'unlock']);
+        Route::post('vault/lock', [VaultController::class, 'lock']);
+
+        // Tout ce qui touche aux dossiers exige que le coffre soit déverrouillé.
+        Route::middleware('vault')->group(function () {
+            Route::get('dossiers', [DossierController::class, 'index']);
+            Route::post('dossiers', [DossierController::class, 'store']);
+            Route::get('dossiers/{id}', [DossierController::class, 'show'])->whereNumber('id');
+            Route::put('dossiers/{id}', [DossierController::class, 'update'])->whereNumber('id');
+            Route::delete('dossiers/{id}', [DossierController::class, 'destroy'])->whereNumber('id');
+            Route::post('dossiers/{dossierId}/files', [DossierFileController::class, 'init'])->whereNumber('dossierId');
+            Route::put('dossier-files/{id}/chunks/{index}', [DossierFileController::class, 'chunk'])->whereNumber(['id', 'index']);
+            Route::post('dossier-files/{id}/complete', [DossierFileController::class, 'complete'])->whereNumber('id');
+            Route::get('dossier-files/{id}/content', [DossierFileController::class, 'content'])->whereNumber('id');
+            Route::put('dossier-files/{id}', [DossierFileController::class, 'update'])->whereNumber('id');
+            Route::delete('dossier-files/{id}', [DossierFileController::class, 'destroy'])->whereNumber('id');
+        });
 
         Route::get('push/key', [PushController::class, 'key']);
         Route::post('push/subscribe', [PushController::class, 'subscribe']);

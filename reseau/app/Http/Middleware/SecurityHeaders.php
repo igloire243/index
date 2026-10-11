@@ -18,8 +18,9 @@ class SecurityHeaders
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
         $response->headers->set('Permissions-Policy', 'geolocation=(self), camera=(self), microphone=(self)');
 
-        // Pas de CSP quand le serveur de développement Vite tourne (rechargement à chaud).
-        if (! file_exists(public_path('hot'))) {
+        // Pas de CSP quand le serveur de développement Vite tourne (rechargement à chaud) ; et on ne remplace jamais
+        // une CSP plus stricte posée par la route elle-même (contenu du coffre en « sandbox »).
+        if (! file_exists(public_path('hot')) && ! $response->headers->has('Content-Security-Policy')) {
             $response->headers->set('Content-Security-Policy', implode('; ', [
                 "default-src 'self'",
                 "script-src 'self'",

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureVaultUnlocked;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -18,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
         }
         $middleware->web(append: [SecurityHeaders::class]);
+        $middleware->alias(['vault' => EnsureVaultUnlocked::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

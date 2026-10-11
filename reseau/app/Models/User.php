@@ -77,6 +77,11 @@ class User extends Authenticatable
         return $this->hasOne(FinanceSetting::class);
     }
 
+    public function dossiers(): HasMany
+    {
+        return $this->hasMany(Dossier::class);
+    }
+
     public function passkeys(): HasMany
     {
         return $this->hasMany(Passkey::class);

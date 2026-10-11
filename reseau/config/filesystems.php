@@ -38,6 +38,15 @@ return [
             'report' => false,
         ],
 
+        // Coffre : fichiers des dossiers confidentiels, toujours chiffrés. Jamais servi directement par le serveur web.
+        'vault' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/vault'),
+            'serve' => false,
+            'throw' => true,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
