@@ -2,13 +2,12 @@
 import { computed, onMounted, ref } from 'vue';
 import EmptyState from '../components/EmptyState.vue';
 import Meter from '../components/Meter.vue';
-import { buildSuggestions, contactMeters, TRAITS } from '../lib/coach';
-import { seededRandom } from '../lib/coach';
+import { buildSuggestions, contactMeters, monthlyNetworkProgress, seededRandom, TRAITS } from '../lib/coach';
 import { isoDate } from '../lib/dates';
 import { useRouter } from 'vue-router';
 import { contacts, loadContacts, openDetail, openForm, saveContact } from '../stores/contacts';
 import { finance, loadFinance } from '../stores/finance';
-import { toast } from '../stores/session';
+import { session, setNetworkGoal, toast } from '../stores/session';
 
 const router = useRouter();
 const HIDDEN_KEY = 'reseau.coach.hidden';
@@ -42,6 +41,27 @@ const all = computed(() => (contacts.loaded ? buildSuggestions(contacts.list, { 
 const shown = computed(() => (showAll.value ? all.value : all.value.slice(0, 5)));
 const meters = computed(() => contactMeters(contacts.list));
 
+/* Objectif mensuel */
+const editingGoal = ref(false);
+const goalInput = ref('');
+const goal = computed(() => session.user?.network_goal_monthly ?? null);
+const progress = computed(() => monthlyNetworkProgress(contacts.list));
+const monthLabel = computed(() => new Date(progress.value.month + '-01').toLocaleDateString('fr-FR', { month: 'long' }));
+
+function startEditGoal() {
+    goalInput.value = goal.value ?? '';
+    editingGoal.value = true;
+}
+async function saveGoal() {
+    const n = goalInput.value === '' ? null : Number(goalInput.value);
+    try {
+        await setNetworkGoal(n);
+        editingGoal.value = false;
+    } catch (e) {
+        toast(e.message, 'error');
+    }
+}
+
 // Une anecdote différente chaque jour, à s'entraîner à raconter.
 const anecdote = computed(() => {
     const list = contacts.list.filter((c) => c.anecdote);
@@ -69,6 +89,31 @@ async function done(s) {
 
 <template>
     <div class="space-y-3">
+        <section class="card space-y-2" aria-label="Objectif du mois">
+            <div class="flex items-center justify-between gap-2">
+                <h2 class="font-semibold">Objectif de {{ monthLabel }}</h2>
+                <button type="button" class="btn btn-sm" @click="startEditGoal">{{ goal ? 'Modifier' : 'Définir un objectif' }}</button>
+            </div>
+            <Meter
+                v-if="goal"
+                label="Contacts relancés"
+                :value="`${Math.min(progress.count, goal)} / ${goal}`"
+                :ratio="progress.count / goal"
+                :tone="progress.count >= goal ? 'emerald' : 'indigo'"
+            />
+            <p v-else class="muted">Fixe-toi un nombre de contacts à relancer chaque mois, pour garder le rythme.</p>
+            <p v-if="goal && progress.count >= goal" class="text-sm text-emerald-700 dark:text-emerald-400">Objectif atteint, bravo !</p>
+
+            <form v-if="editingGoal" class="flex items-end gap-2 pt-1" @submit.prevent="saveGoal">
+                <div class="flex-1">
+                    <label class="label" for="coach-goal">Contacts à relancer par mois</label>
+                    <input id="coach-goal" v-model="goalInput" class="input" type="number" inputmode="numeric" min="1" max="200" placeholder="ex. 5" />
+                </div>
+                <button type="submit" class="btn btn-primary">Enregistrer</button>
+                <button v-if="goal" type="button" class="btn btn-danger" @click="(goalInput = ''), saveGoal()">Retirer</button>
+            </form>
+        </section>
+
         <h2 class="text-base font-semibold">À faire aujourd’hui</h2>
         <EmptyState v-if="contacts.loaded && !all.length" illustration="coach" title="Rien d’urgent" small>
             <p>Ton réseau est bien entretenu, beau travail.</p>

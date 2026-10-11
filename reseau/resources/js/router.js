@@ -54,6 +54,8 @@ export const router = createRouter({
             ],
         },
         { path: '/reglages', name: 'reglages', component: () => import('./views/SettingsView.vue'), meta: { title: 'Réglages' } },
+        { path: '/nouveautes', name: 'nouveautes', component: () => import('./views/ChangelogView.vue'), meta: { title: 'Nouveautés' } },
+        { path: '/recherche', name: 'recherche', component: () => import('./views/SearchView.vue'), meta: { title: 'Recherche' } },
         { path: '/:pathMatch(.*)*', redirect: '/contacts' },
     ],
     scrollBehavior: () => ({ top: 0 }),

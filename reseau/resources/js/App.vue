@@ -1,11 +1,12 @@
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import ContactForm from './components/ContactForm.vue';
 import ContactSheet from './components/ContactSheet.vue';
 import Icon from './components/Icon.vue';
 import IllustrationSprite from './components/IllustrationSprite.vue';
 import Toast from './components/Toast.vue';
+import { hasUnseen } from './lib/changelog';
 import { openForm } from './stores/contacts';
 import { session } from './stores/session';
 
@@ -21,6 +22,8 @@ const tabs = [
 ];
 
 const title = computed(() => route.meta.title || 'Réseau');
+const nouveautes = ref(hasUnseen());
+watch(() => route.name, () => (nouveautes.value = hasUnseen()));
 const isActive = (to) => route.path === to || route.path.startsWith(to + '/');
 
 // Session expirée pendant l'utilisation : retour à l'écran de connexion.
@@ -40,13 +43,30 @@ watch(
         >
             <div class="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
                 <h1 class="text-lg font-semibold tracking-tight">{{ title }}</h1>
-                <RouterLink
-                    to="/reglages"
-                    class="grid size-11 place-items-center rounded-full text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-800"
-                    aria-label="Réglages"
-                >
-                    <Icon name="settings" />
-                </RouterLink>
+                <div class="flex items-center gap-1">
+                    <RouterLink
+                        to="/recherche"
+                        class="grid size-11 place-items-center rounded-full text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-800"
+                        aria-label="Recherche"
+                    >
+                        <Icon name="search" />
+                    </RouterLink>
+                    <RouterLink
+                        to="/nouveautes"
+                        class="relative grid size-11 place-items-center rounded-full text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-800"
+                        aria-label="Nouveautés"
+                    >
+                        <Icon name="star" />
+                        <span v-if="nouveautes" class="absolute top-2.5 right-2.5 size-2 rounded-full bg-indigo-500" aria-hidden="true" />
+                    </RouterLink>
+                    <RouterLink
+                        to="/reglages"
+                        class="grid size-11 place-items-center rounded-full text-slate-600 hover:bg-slate-200/60 dark:text-slate-300 dark:hover:bg-slate-800"
+                        aria-label="Réglages"
+                    >
+                        <Icon name="settings" />
+                    </RouterLink>
+                </div>
             </div>
         </header>
 

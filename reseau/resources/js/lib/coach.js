@@ -211,6 +211,18 @@ export function buildSuggestions(contacts, { pos = null, today = isoDate(), hidd
 }
 
 /** Jauges de progression du carnet. */
+/**
+ * Progression de l'objectif mensuel : nombre de contacts distincts relancés (champ `last_contact`) depuis le
+ * début du mois en cours. Simple et lisible, au prix d'une approximation : modifier manuellement la date d'un
+ * contact à une date du mois compte aussi comme une relance.
+ */
+export function monthlyNetworkProgress(contacts, today = isoDate()) {
+    const month = today.slice(0, 7); // « 2026-10 »
+    const count = contacts.filter((c) => c.last_contact && c.last_contact.slice(0, 7) === month).length;
+
+    return { count, month };
+}
+
 export function contactMeters(contacts) {
     const n = contacts.length;
     const covered = COMMON_DOMAINS.filter((dm) => contacts.some((c) => inDomain(c, norm(dm)))).length;
