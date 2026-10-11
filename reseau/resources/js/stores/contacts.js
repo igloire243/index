@@ -14,7 +14,12 @@ function readPos() {
     }
 }
 
-export const contacts = reactive({ list: [], loaded: false, loading: false, pos: readPos(), posError: null });
+export const contacts = reactive({ list: [], loaded: false, loading: false, pos: readPos(), posError: null, routeTo: null });
+
+/** Demande l'itinéraire vers un contact : la carte l'affiche (voir MapView). */
+export const startRoute = (id) => {
+    contacts.routeTo = id;
+};
 
 /** Fenêtres ouvertes depuis n'importe quelle vue (fiche détail et formulaire). */
 export const ui = reactive({ detailId: null, form: { open: false, id: null, prefill: null } });

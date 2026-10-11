@@ -1,13 +1,15 @@
 <script setup>
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { daysSince, fmtDist, hasCoords, phoneHref, smsHref, waHref } from '../lib/contacts';
 import { fmtFull, isoDate } from '../lib/dates';
-import { contacts, deleteContact, distTo, openForm, saveContact, ui } from '../stores/contacts';
+import { contacts, deleteContact, distTo, openForm, saveContact, startRoute, ui } from '../stores/contacts';
 import { toast } from '../stores/session';
 import Avatar from './Avatar.vue';
 import Sheet from './Sheet.vue';
 
 const RELANCE_DAYS = 90;
+const router = useRouter();
 const contact = computed(() => contacts.list.find((c) => c.id === ui.detailId) || null);
 const open = computed({
     get: () => contact.value !== null,
@@ -18,6 +20,13 @@ const open = computed({
 const since = computed(() => daysSince(contact.value?.last_contact));
 const dist = computed(() => (contact.value ? distTo(contact.value) : null));
 const favorText = computed(() => ({ owed: 'Cette personne te doit un service', owe: 'Tu dois un service à cette personne' })[contact.value?.favor]);
+
+function goRoute() {
+    const id = contact.value.id;
+    ui.detailId = null;
+    startRoute(id);
+    router.push('/contacts/carte'); // l'itinéraire s'affiche dans l'application, sur la carte
+}
 
 async function markContacted() {
     try {
@@ -62,14 +71,7 @@ async function remove() {
                 <a v-if="contact.phone" class="btn" :href="smsHref(contact.phone)">SMS</a>
                 <a v-if="contact.phone" class="btn" :href="waHref(contact.phone)" target="_blank" rel="noopener">WhatsApp</a>
                 <a v-if="contact.email" class="btn" :href="'mailto:' + encodeURI(contact.email)">E-mail</a>
-                <a
-                    v-if="hasCoords(contact)"
-                    class="btn"
-                    :href="`https://www.google.com/maps/dir/?api=1&destination=${contact.lat},${contact.lng}`"
-                    target="_blank"
-                    rel="noopener"
-                    >Itinéraire</a
-                >
+                <button v-if="hasCoords(contact)" type="button" class="btn" @click="goRoute">Itinéraire</button>
             </div>
 
             <dl class="selectable space-y-3 text-sm">

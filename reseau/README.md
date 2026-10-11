@@ -3,6 +3,7 @@
 Application personnelle, utilisable depuis un téléphone (PWA), en trois parties :
 
 - **Contacts** : carnet moderne avec domaines (« qui contacter pour… »), rôle, anecdote, services dus ou rendus, carte OpenStreetMap, distance par rapport à ta position, import Google Contacts (`.vcf`).
+- **Itinéraire dans l'application** : depuis la fiche d'un contact ou la carte, le trajet s'affiche sur la carte en plein écran (voiture, à pied ou vélo) avec durée, distance, étapes en français et suivi en direct (la consigne avance avec ta position, recalcul si tu t'écartes). Si le service de routage est injoignable, tu gardes la direction à vol d'oiseau et un lien de secours vers une autre application.
 - **Coach** : chaque jour, des suggestions pour cultiver ton réseau (relancer, présenter deux contacts, combler un domaine vide, rendre un service, écrire une anecdote, apprendre d'un expert, surprendre quelqu'un) et des jauges de progression.
 - **Formulaires en plusieurs étapes** partout (connexion, contact, habitude, objectif, mesure, repas), avec validation étape par étape, animations (désactivées si le système demande moins de mouvement) et comportement d'application mobile : pas de zoom, barre du haut aux couleurs de la page, pas d'action involontaire au double tap.
 - **Illustrations** originales intégrées (SVG, sans image externe) sur l'écran de connexion et dans les écrans vides, adaptées au mode sombre. **Carte en plein écran** (bouton en haut à droite de la carte, Échap pour quitter) avec filtres et position.
