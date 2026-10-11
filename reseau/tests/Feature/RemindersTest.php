@@ -13,7 +13,9 @@ use Tests\TestCase;
 class FakePushSender implements PushSender
 {
     public bool $on = true;
+
     public string $result = self::SENT;
+
     /** @var list<array{endpoint: string, payload: array}> */
     public array $sent = [];
 
@@ -35,6 +37,7 @@ class RemindersTest extends TestCase
     use RefreshDatabase;
 
     private FakePushSender $push;
+
     private User $user;
 
     protected function setUp(): void

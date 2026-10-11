@@ -7,7 +7,6 @@ use App\Models\User;
 use App\Services\PushSender;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
-use Illuminate\Support\Str;
 use Throwable;
 
 class SendReminders extends Command

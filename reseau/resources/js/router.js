@@ -1,0 +1,36 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import { session } from './stores/session';
+
+export const router = createRouter({
+    history: createWebHistory(),
+    routes: [
+        { path: '/login', name: 'login', component: () => import('./views/LoginView.vue'), meta: { title: 'Connexion' } },
+        { path: '/', redirect: '/contacts' },
+        { path: '/contacts', name: 'contacts', component: () => import('./views/ContactsView.vue'), meta: { title: 'Contacts', fab: true } },
+        { path: '/carte', name: 'carte', component: () => import('./views/MapView.vue'), meta: { title: 'Carte', fab: true } },
+        { path: '/domaines', name: 'domaines', component: () => import('./views/DomainsView.vue'), meta: { title: 'Domaines', fab: true } },
+        { path: '/coach', name: 'coach', component: () => import('./views/CoachView.vue'), meta: { title: 'Coach', fab: true } },
+        {
+            path: '/sante',
+            component: () => import('./views/health/HealthLayout.vue'),
+            meta: { title: 'Santé' },
+            children: [
+                { path: '', name: 'sante', component: () => import('./views/health/TodayView.vue') },
+                { path: 'planning', name: 'sante-planning', component: () => import('./views/health/PlanningView.vue') },
+                { path: 'repas', name: 'sante-repas', component: () => import('./views/health/MealsView.vue') },
+                { path: 'suivi', name: 'sante-suivi', component: () => import('./views/health/ProgressView.vue') },
+                { path: 'programmes', name: 'sante-programmes', component: () => import('./views/health/ProgramsView.vue') },
+            ],
+        },
+        { path: '/reglages', name: 'reglages', component: () => import('./views/SettingsView.vue'), meta: { title: 'Réglages' } },
+        { path: '/:pathMatch(.*)*', redirect: '/contacts' },
+    ],
+    scrollBehavior: () => ({ top: 0 }),
+});
+
+router.beforeEach((to) => {
+    if (!session.user && to.name !== 'login') {
+        return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} };
+    }
+    if (session.user && to.name === 'login') return '/contacts';
+});

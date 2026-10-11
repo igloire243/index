@@ -14,7 +14,7 @@ class HabitController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = $request->user()->habits()->orderByRaw("time IS NULL, time")->orderBy('name');
+        $query = $request->user()->habits()->orderByRaw('time IS NULL, time')->orderBy('name');
         if (! $request->boolean('archived')) {
             $query->whereNull('archived_at');
         }

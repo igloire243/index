@@ -7,7 +7,9 @@ use App\Models\PushSubscription;
 interface PushSender
 {
     public const SENT = 'sent';
+
     public const GONE = 'gone';     // abonnement expiré : à supprimer
+
     public const FAILED = 'failed'; // échec temporaire
 
     public function enabled(): bool;

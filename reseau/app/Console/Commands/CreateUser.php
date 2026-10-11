@@ -11,7 +11,7 @@ use function Laravel\Prompts\text;
 
 class CreateUser extends Command
 {
-    protected $description = "Crée un utilisateur, ou met à jour son mot de passe.";
+    protected $description = 'Crée un utilisateur, ou met à jour son mot de passe.';
 
     protected $signature = 'reseau:user {email? : Adresse e-mail} {--name= : Nom affiché} {--password= : Mot de passe (déconseillé : visible dans l\'historique du terminal)}';
 

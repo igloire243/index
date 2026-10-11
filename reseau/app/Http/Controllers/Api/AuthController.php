@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 class AuthController extends Controller
 {
     private const MAX_ATTEMPTS = 5;
+
     private const DECAY_SECONDS = 900;
 
     public function login(Request $request): JsonResponse

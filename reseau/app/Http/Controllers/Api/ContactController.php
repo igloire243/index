@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Contact;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -60,12 +59,14 @@ class ContactController extends Controller
             $validator = Validator::make($raw, $this->rules());
             if ($validator->fails()) {
                 $skipped++;
+
                 continue;
             }
             $data = $this->normalize($validator->validated());
             $sig = $this->signature($data['name'], $data['phone'] ?? null);
             if (isset($known[$sig])) {
                 $skipped++;
+
                 continue;
             }
             $known[$sig] = true;

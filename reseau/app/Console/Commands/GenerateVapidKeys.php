@@ -9,7 +9,7 @@ class GenerateVapidKeys extends Command
 {
     protected $signature = 'reseau:vapid';
 
-    protected $description = "Génère les clés VAPID pour les notifications push.";
+    protected $description = 'Génère les clés VAPID pour les notifications push.';
 
     public function handle(): int
     {
