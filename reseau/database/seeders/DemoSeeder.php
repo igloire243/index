@@ -43,9 +43,11 @@ class DemoSeeder extends Seeder
         'Johannesburg' => [-26.2041, 28.0473],
     ];
 
+    private int $state = 2026;
+
     public function run(): void
     {
-        mt_srand(2026); // mêmes données à chaque exécution
+        $this->state = 2026; // mêmes données à chaque exécution
 
         User::where('email', self::EMAIL)->delete(); // supprime aussi ses données (suppression en cascade)
         $user = User::create(['name' => 'Démo', 'email' => self::EMAIL, 'password' => self::PASSWORD, 'timezone' => self::TZ]);
@@ -58,19 +60,39 @@ class DemoSeeder extends Seeder
         $this->finance($user, $today);
     }
 
+    /**
+     * Générateur pseudo-aléatoire PROPRE à la démo (mulberry32), de 0 inclus à 1 exclu. Le `mt_rand` global n'est pas
+     * utilisable ici : d'autres morceaux de code (ramasse-miettes, bibliothèques) peuvent le consommer en passant, ce
+     * qui rendait les données différentes d'une exécution à l'autre.
+     */
+    private function next(): float
+    {
+        $this->state = ($this->state + 0x6D2B79F5) & 0xFFFFFFFF;
+        $t = $this->mul32($this->state ^ ($this->state >> 15), $this->state | 1);
+        $t ^= ($t + $this->mul32($t ^ ($t >> 7), $t | 61)) & 0xFFFFFFFF;
+
+        return (($t ^ ($t >> 14)) & 0xFFFFFFFF) / 4294967296;
+    }
+
+    /** Produit de deux entiers de 32 bits modulo 2^32, sans jamais dépasser les entiers de PHP. */
+    private function mul32(int $a, int $b): int
+    {
+        return ((($a & 0xFFFF) * $b) + (((($a >> 16) * $b) & 0xFFFF) << 16)) & 0xFFFFFFFF;
+    }
+
     private function chance(float $p): bool
     {
-        return mt_rand() / mt_getrandmax() < $p;
+        return $this->next() < $p;
     }
 
     private function between(float $min, float $max): float
     {
-        return $min + (mt_rand() / mt_getrandmax()) * ($max - $min);
+        return $min + $this->next() * ($max - $min);
     }
 
     private function pick(array $items): mixed
     {
-        return $items[mt_rand(0, count($items) - 1)];
+        return $items[(int) floor($this->next() * count($items))];
     }
 
     private function contacts(User $user, Carbon $today): void
