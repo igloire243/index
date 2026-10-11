@@ -43,6 +43,15 @@ export const router = createRouter({
                 { path: 'biens', name: 'finances-biens', component: () => import('./views/finance/AssetsView.vue') },
             ],
         },
+        {
+            path: '/coffre',
+            component: () => import('./views/vault/VaultLayout.vue'),
+            meta: { title: 'Coffre' },
+            children: [
+                { path: '', name: 'coffre', component: () => import('./views/vault/DossiersView.vue') },
+                { path: ':id(\\d+)', name: 'coffre-dossier', component: () => import('./views/vault/DossierView.vue') },
+            ],
+        },
         { path: '/reglages', name: 'reglages', component: () => import('./views/SettingsView.vue'), meta: { title: 'Réglages' } },
         { path: '/:pathMatch(.*)*', redirect: '/contacts' },
     ],

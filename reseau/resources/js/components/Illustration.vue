@@ -10,6 +10,7 @@ import SceneMap from './illustrations/SceneMap.vue';
 import SceneMeals from './illustrations/SceneMeals.vue';
 import SceneProgress from './illustrations/SceneProgress.vue';
 import SceneSecurity from './illustrations/SceneSecurity.vue';
+import SceneVault from './illustrations/SceneVault.vue';
 
 const SCENES = {
     login: SceneLogin,
@@ -22,6 +23,7 @@ const SCENES = {
     security: SceneSecurity,
     finance: SceneFinance,
     assets: SceneAssets,
+    vault: SceneVault,
 };
 
 const props = defineProps({ name: { type: String, required: true } });

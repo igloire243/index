@@ -6,6 +6,7 @@ import { fmtFull, isoDate } from '../lib/dates';
 import { contacts, deleteContact, distTo, openForm, saveContact, startRoute, ui } from '../stores/contacts';
 import { toast } from '../stores/session';
 import Avatar from './Avatar.vue';
+import Icon from './Icon.vue';
 import Sheet from './Sheet.vue';
 
 const RELANCE_DAYS = 90;
@@ -26,6 +27,12 @@ function goRoute() {
     ui.detailId = null;
     startRoute(id);
     router.push('/contacts/carte'); // l'itinéraire s'affiche dans l'application, sur la carte
+}
+
+function goDossiers() {
+    const id = contact.value.id;
+    ui.detailId = null;
+    router.push({ path: '/coffre', query: { contact: id } }); // le coffre demande le mot de passe avant d'afficher quoi que ce soit
 }
 
 async function markContacted() {
@@ -72,6 +79,7 @@ async function remove() {
                 <a v-if="contact.phone" class="btn" :href="waHref(contact.phone)" target="_blank" rel="noopener">WhatsApp</a>
                 <a v-if="contact.email" class="btn" :href="'mailto:' + encodeURI(contact.email)">E-mail</a>
                 <button v-if="hasCoords(contact)" type="button" class="btn" @click="goRoute">Itinéraire</button>
+                <button type="button" class="btn" @click="goDossiers"><Icon name="lock" :size="16" /> Dossier confidentiel</button>
             </div>
 
             <dl class="selectable space-y-3 text-sm">
