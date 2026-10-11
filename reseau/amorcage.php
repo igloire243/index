@@ -149,7 +149,9 @@ if (! $artisan('migrate', ['--force' => true])) {
 
 // 5. Premier utilisateur (optionnel)
 $env = (string) file_get_contents($destination.'/.env');
-$valeur = fn (string $cle) => preg_match('/^'.$cle.'=(.*)$/m', $env, $m) ? trim($m[1], " \t\"'") : '';
+// Le \r en trim() : un .env aux fins de ligne Windows (\r\n) laissait ce caractère invisible à la fin de chaque
+// valeur, qui faisait alors échouer la validation (ex. « adresse@example.com\r » rejetée comme e-mail invalide).
+$valeur = fn (string $cle) => preg_match('/^'.$cle.'=(.*)$/m', $env, $m) ? trim($m[1], " \t\r\n\"'") : '';
 $email = $valeur('AMORCAGE_EMAIL');
 $motDePasse = $valeur('AMORCAGE_MOT_DE_PASSE');
 if ($email !== '' && $motDePasse !== '') {
