@@ -75,6 +75,8 @@ Tests : `composer test` (PHPUnit, 87 tests) et `npm test` (Vitest, 73 tests : co
 
 ## Mise en ligne
 
+> Hébergement mutualisé **LWS** (FTP + CRON, sans SSH) : déploiement automatique depuis GitHub, voir `docs/deploiement/lws/LISEZ-MOI.md`.
+
 L'application a besoin d'un **serveur PHP avec un disque qui persiste** (VPS, Laravel Forge, Fly.io ou Railway avec un volume…). GitHub Pages ne convient pas. Sur un hébergement dont le disque est effacé à chaque déploiement, tes données SQLite seraient perdues.
 
 ```sh
