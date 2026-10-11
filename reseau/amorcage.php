@@ -5,7 +5,10 @@ use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
  * PREMIER DÉPLOIEMENT SUR UN HÉBERGEMENT SANS LIGNE DE COMMANDE (LWS) : à lancer une seule fois, par une tâche CRON
- * à usage unique (`php /home/htdocs/home/reseau-app/amorcage.php`).
+ * à usage unique, avec le chemin ABSOLU de destination en argument (il appartient au serveur, pas au dépôt — rien
+ * ne permet de le déduire de l'emplacement de ce script par une simple remontée de dossiers : sur certains comptes,
+ * le dépôt sous `htdocs` et la destination hors du web ne partagent aucun ancêtre commun qu'on pourrait calculer) :
+ *     php /home/htdocs/home/reseau-app/amorcage.php /home/reseau-app
  *
  * Tout se passe DANS CE SEUL PROCESSUS PHP : la copie des fichiers est faite en PHP pur et les commandes artisan
  * sont appelées directement sur le noyau Laravel, jamais en relançant `php` en sous-processus. Certains
@@ -28,7 +31,6 @@ if (PHP_SAPI !== 'cli') {
 }
 
 $depot = __DIR__;
-$destination = rtrim($argv[1] ?? dirname(__DIR__, 3).'/reseau-app', '/');
 $journal = $depot.'/amorcage.log';
 
 function ecrit(string $journal, string $message): void
@@ -41,6 +43,14 @@ $dire('--- Amorçage lancé ---');
 
 if (! is_file($depot.'/VERSION')) {
     $dire('Dépôt vide : lance d’abord le workflow « Déployer sur LWS » dans GitHub.');
+    exit(1);
+}
+
+// Pas de valeur par défaut devinée : sur certains comptes, remonter depuis __DIR__ ne retombe jamais sur la
+// destination (elle n'a pas de dossier ancêtre commun avec le dépôt). Le chemin doit être donné explicitement.
+$destination = isset($argv[1]) ? rtrim($argv[1], '/') : '';
+if ($destination === '') {
+    $dire('Chemin de destination manquant : relance avec « php amorcage.php /home/reseau-app » (ton chemin réel).');
     exit(1);
 }
 
@@ -139,7 +149,9 @@ if (! $artisan('migrate', ['--force' => true])) {
 
 // 5. Premier utilisateur (optionnel)
 $env = (string) file_get_contents($destination.'/.env');
-$valeur = fn (string $cle) => preg_match('/^'.$cle.'=(.*)$/m', $env, $m) ? trim($m[1], " \t\"'") : '';
+// Le \r en trim() : un .env aux fins de ligne Windows (\r\n) laissait ce caractère invisible à la fin de chaque
+// valeur, qui faisait alors échouer la validation (ex. « adresse@example.com\r » rejetée comme e-mail invalide).
+$valeur = fn (string $cle) => preg_match('/^'.$cle.'=(.*)$/m', $env, $m) ? trim($m[1], " \t\r\n\"'") : '';
 $email = $valeur('AMORCAGE_EMAIL');
 $motDePasse = $valeur('AMORCAGE_MOT_DE_PASSE');
 if ($email !== '' && $motDePasse !== '') {
