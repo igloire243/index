@@ -5,6 +5,7 @@ Application personnelle, utilisable depuis un téléphone (PWA), en trois partie
 - **Contacts** : carnet moderne avec domaines (« qui contacter pour… »), rôle, anecdote, services dus ou rendus, carte OpenStreetMap, distance par rapport à ta position, import Google Contacts (`.vcf`).
 - **Coach** : chaque jour, des suggestions pour cultiver ton réseau (relancer, présenter deux contacts, combler un domaine vide, rendre un service, écrire une anecdote, apprendre d'un expert, surprendre quelqu'un) et des jauges de progression.
 - **Formulaires en plusieurs étapes** partout (connexion, contact, habitude, objectif, mesure, repas), avec validation étape par étape, animations (désactivées si le système demande moins de mouvement) et comportement d'application mobile : pas de zoom, barre du haut aux couleurs de la page, pas d'action involontaire au double tap.
+- **Illustrations** originales intégrées (SVG, sans image externe) sur l'écran de connexion et dans les écrans vides, adaptées au mode sombre. **Carte en plein écran** (bouton en haut à droite de la carte, Échap pour quitter) avec filtres et position.
 - **Santé** : programmes prêts à l'emploi (reprise en douceur, perte de poids progressive, reprise de poids saine, sommeil, soins du corps), planning hebdomadaire d'habitudes à cocher, planning des repas, suivi du poids / tour de taille / sommeil / énergie / humeur avec courbes, séries et taux de réalisation, **rappels par notification**.
 
 > Le module santé est un outil de suivi, pas un avis médical. Il ne prescrit ni régime ni calories.

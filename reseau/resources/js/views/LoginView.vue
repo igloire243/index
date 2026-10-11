@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Icon from '../components/Icon.vue';
+import Illustration from '../components/Illustration.vue';
 import Wizard from '../components/Wizard.vue';
 import { describePasskeyError, hasLocalPasskey, passkeysSupported } from '../lib/passkeys';
 import { login, loginWithFace } from '../stores/session';
@@ -57,12 +58,12 @@ async function submit() {
 
 <template>
     <main class="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-6 py-10">
-        <img src="/icon-192.png" alt="" class="rise mx-auto mb-6 size-20 rounded-2xl shadow" />
+        <Illustration name="login" class="rise mx-auto mb-4 max-w-72" />
         <h1 class="rise mb-1 text-center text-2xl font-semibold tracking-tight" style="--i: 1">Réseau</h1>
         <p class="muted rise mb-8 text-center" style="--i: 2">Mes contacts, ma santé, mes habitudes.</p>
 
         <div class="rise card" style="--i: 3">
-            <Wizard :steps="steps" :busy="busy" submit-label="Se connecter" @submit="submit" @cancel="() => {}">
+            <Wizard :steps="steps" :busy="busy" :cancelable="false" submit-label="Se connecter" @submit="submit">
                 <template #default="{ step }">
                     <div v-if="step.key === 'email'">
                         <label class="label" for="email">Adresse e-mail</label>

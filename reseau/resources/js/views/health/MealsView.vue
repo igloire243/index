@@ -1,5 +1,6 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
+import EmptyState from '../../components/EmptyState.vue';
 import Icon from '../../components/Icon.vue';
 import MealForm from '../../components/MealForm.vue';
 import { addDays, fmtLong, fmtShort, isoDate, weekStart } from '../../lib/dates';
@@ -65,6 +66,10 @@ async function copyPrevious() {
             </div>
             <button type="button" class="btn size-11 !p-0" aria-label="Semaine suivante" @click="anchor = addDays(anchor, 7)"><Icon name="right" /></button>
         </div>
+
+        <EmptyState v-if="summary.planned === 0 && health.loaded" illustration="meals" title="Aucun repas planifié cette semaine" small>
+            <p>Ajoute tes repas jour par jour, ou copie ceux de la semaine précédente.</p>
+        </EmptyState>
 
         <button type="button" class="btn w-full" @click="copyPrevious">Copier la semaine précédente</button>
 

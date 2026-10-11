@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import ContactRow from '../components/ContactRow.vue';
+import EmptyState from '../components/EmptyState.vue';
 import Icon from '../components/Icon.vue';
 import { allDomains, inDomain, matches, norm } from '../lib/contacts';
 import { contacts, distTo, loadContacts, locate, openForm } from '../stores/contacts';
@@ -86,13 +87,14 @@ function toggleDomain(key) {
             <li v-for="(c, i) in items" :key="c.id" class="rise" :style="{ '--i': Math.min(i, 12) }"><ContactRow :contact="c" /></li>
         </ul>
 
-        <div v-if="!items.length && contacts.loaded" class="py-10 text-center text-slate-500">
-            <template v-if="!contacts.list.length">
-                <p>Ton carnet est vide.</p>
-                <p class="mb-4">Ajoute ton premier contact, ou importe ceux de Google Contacts (Réglages).</p>
-                <button type="button" class="btn btn-primary" @click="openForm()">Ajouter un contact</button>
-            </template>
-            <p v-else>Aucun résultat.</p>
-        </div>
+        <template v-if="!items.length && contacts.loaded">
+            <EmptyState v-if="!contacts.list.length" illustration="contacts" title="Ton carnet est vide">
+                <p>Ajoute ton premier contact, ou importe ceux de Google Contacts (Réglages).</p>
+                <template #actions>
+                    <button type="button" class="btn btn-primary" @click="openForm()">Ajouter un contact</button>
+                </template>
+            </EmptyState>
+            <p v-else class="py-10 text-center text-slate-500">Aucun résultat.</p>
+        </template>
     </div>
 </template>

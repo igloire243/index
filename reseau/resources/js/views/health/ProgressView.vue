@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue';
 import AnimatedNumber from '../../components/AnimatedNumber.vue';
 import BarChart from '../../components/BarChart.vue';
+import EmptyState from '../../components/EmptyState.vue';
 import GoalForm from '../../components/GoalForm.vue';
 import Icon from '../../components/Icon.vue';
 import LineChart from '../../components/LineChart.vue';
@@ -83,7 +84,9 @@ const pct = (r) => (r == null ? '–' : Math.round(r * 100) + ' %');
                     Ce rythme est rapide (plus de 1 kg par semaine). Parles-en à un professionnel de santé pour t’assurer que tout va bien.
                 </p>
             </template>
-            <p v-else class="muted">Ajoute ta première pesée pour voir ta courbe.</p>
+            <EmptyState v-else illustration="progress" title="Pas encore de pesée" small>
+                <p>Ajoute ta première mesure pour voir ta courbe et ta progression.</p>
+            </EmptyState>
         </section>
 
         <section class="card rise space-y-3" style="--i: 1" aria-label="Adhérence">

@@ -12,6 +12,7 @@ const props = defineProps({
     steps: { type: Array, required: true },
     busy: Boolean,
     submitLabel: { type: String, default: 'Enregistrer' },
+    cancelable: { type: Boolean, default: true }, // faux : pas de bouton « Annuler » sur la première étape (ex. connexion)
 });
 const emit = defineEmits(['submit', 'cancel']);
 
@@ -19,6 +20,7 @@ const index = ref(0);
 const reached = ref(0);
 const direction = ref('next');
 const body = ref(null);
+const touched = ref(false); // le message d'aide n'apparaît qu'après une première saisie
 
 const current = computed(() => props.steps[index.value]);
 const isLast = computed(() => index.value === props.steps.length - 1);
@@ -31,6 +33,7 @@ function go(i) {
     if (i < 0 || i >= props.steps.length || i === index.value) return;
     if (i > index.value && !validBefore(i)) return;
     direction.value = i > index.value ? 'next' : 'prev';
+    touched.value = false;
     index.value = i;
     reached.value = Math.max(reached.value, i);
 }
@@ -85,7 +88,7 @@ defineExpose({ go });
             <p class="sr-only" aria-live="polite">Étape {{ index + 1 }} sur {{ steps.length }} : {{ current.title }}</p>
         </div>
 
-        <div ref="body" class="overflow-hidden px-0.5 py-0.5">
+        <div ref="body" class="overflow-hidden px-0.5 py-0.5" @input="touched = true" @change="touched = true">
             <Transition :name="`step-${direction}`" mode="out-in">
                 <div :key="index" class="space-y-3">
                     <slot :step="current" :index="index" />
@@ -93,12 +96,13 @@ defineExpose({ go });
             </Transition>
         </div>
 
-        <p v-if="!canNext && current.hint" class="text-sm text-amber-700 dark:text-amber-400" role="status">{{ current.hint }}</p>
+        <p v-if="touched && !canNext && current.hint" class="text-sm text-amber-700 dark:text-amber-400" role="status">{{ current.hint }}</p>
 
         <div class="flex justify-between gap-2 pt-1">
-            <button type="button" class="btn" @click="index === 0 ? emit('cancel') : go(index - 1)">
+            <button v-if="index > 0 || cancelable" type="button" class="btn" @click="index === 0 ? emit('cancel') : go(index - 1)">
                 {{ index === 0 ? 'Annuler' : 'Retour' }}
             </button>
+            <span v-else />
             <button type="submit" class="btn btn-primary min-w-32" :disabled="!canNext || busy">
                 {{ isLast ? (busy ? 'Enregistrement…' : submitLabel) : 'Suivant' }}
             </button>

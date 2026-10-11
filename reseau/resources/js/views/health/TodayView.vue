@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import AnimatedNumber from '../../components/AnimatedNumber.vue';
+import EmptyState from '../../components/EmptyState.vue';
 import Icon from '../../components/Icon.vue';
 import MeasurementForm from '../../components/MeasurementForm.vue';
 import { confetti } from '../../lib/confetti';
@@ -107,10 +108,12 @@ const tiles = computed(() => {
             </Transition>
         </section>
 
-        <section v-if="!health.habits.length && health.loaded" class="card text-center">
-            <p class="mb-3">Tu n’as pas encore de programme.</p>
-            <RouterLink to="/sante/programmes" class="btn btn-primary">Choisir un programme</RouterLink>
-        </section>
+        <EmptyState v-if="!health.habits.length && health.loaded" illustration="health" title="Tu n’as pas encore de programme">
+            <p>Choisis un programme prêt à l’emploi : tes habitudes du jour apparaîtront ici.</p>
+            <template #actions>
+                <RouterLink to="/sante/programmes" class="btn btn-primary">Choisir un programme</RouterLink>
+            </template>
+        </EmptyState>
         <p v-else-if="health.loaded && !due.length" class="muted text-center">Rien de prévu ce jour-là.</p>
 
         <section v-for="g in groups" :key="g.part + date" :aria-label="g.part">

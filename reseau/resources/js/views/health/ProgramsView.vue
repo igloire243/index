@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import Illustration from '../../components/Illustration.vue';
 import { WEEKDAYS } from '../../lib/dates';
 import { CATEGORIES, GOALS } from '../../lib/health';
 import { adoptProgram, health, loadPrograms } from '../../stores/health';
@@ -36,6 +37,7 @@ async function adopt(p) {
 
 <template>
     <div class="space-y-3">
+        <Illustration name="health" class="mx-auto max-w-56" />
         <p class="muted">Choisis un programme : ses habitudes sont ajoutées à ton planning, et tu peux ensuite les modifier librement.</p>
 
         <article v-for="(p, i) in health.programs" :key="p.key" class="card rise space-y-2" :style="{ '--i': i }">

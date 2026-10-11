@@ -32,6 +32,8 @@ const PATHS = {
     download: 'M12 4v11M7 11l5 5 5-5M5 20h14',
     upload: 'M12 16V5M7 9l5-5 5 5M5 20h14',
     flame: 'M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4 0 2 1 3 2 3 0-3-1-5 1-9z',
+    expand: 'M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5',
+    shrink: 'M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5',
     face: 'M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2M9 10v1M15 10v1M9.5 15c1.5 1.3 3.5 1.3 5 0',
 };
 </script>

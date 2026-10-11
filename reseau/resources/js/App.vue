@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router';
 import ContactForm from './components/ContactForm.vue';
 import ContactSheet from './components/ContactSheet.vue';
 import Icon from './components/Icon.vue';
+import IllustrationSprite from './components/IllustrationSprite.vue';
 import Toast from './components/Toast.vue';
 import { openForm } from './stores/contacts';
 import { session } from './stores/session';
@@ -32,6 +33,7 @@ watch(
 </script>
 
 <template>
+    <IllustrationSprite />
     <template v-if="session.user">
         <header
             class="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 pt-[env(safe-area-inset-top)] dark:border-slate-800 dark:bg-slate-950"

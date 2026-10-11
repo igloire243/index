@@ -5,6 +5,7 @@ import { fmtFull } from '../lib/dates';
 import { passkeysSupported, setLocalPasskey } from '../lib/passkeys';
 import { toast } from '../stores/session';
 import Icon from './Icon.vue';
+import Illustration from './Illustration.vue';
 import PasskeyForm from './PasskeyForm.vue';
 
 const supported = passkeysSupported();
@@ -35,6 +36,7 @@ async function remove(p) {
 
 <template>
     <section class="card space-y-3" aria-label="Face ID / empreinte">
+        <Illustration name="security" class="mx-auto max-w-56" />
         <h2 class="font-semibold">Face ID / empreinte</h2>
         <p class="muted">Connecte-toi d’un geste, sans mot de passe, avec la reconnaissance faciale ou l’empreinte de ton téléphone. À activer sur chaque appareil, après t’être connecté une première fois avec ton mot de passe.</p>
 

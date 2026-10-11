@@ -4,8 +4,9 @@ import 'leaflet/dist/leaflet.css';
 import icon2x from 'leaflet/dist/images/marker-icon-2x.png';
 import icon from 'leaflet/dist/images/marker-icon.png';
 import shadow from 'leaflet/dist/images/marker-shadow.png';
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import ContactRow from '../components/ContactRow.vue';
+import EmptyState from '../components/EmptyState.vue';
 import Icon from '../components/Icon.vue';
 import { allDomains, fmtDist, hasCoords, inDomain } from '../lib/contacts';
 import { contacts, distTo, loadContacts, locate, openDetail } from '../stores/contacts';
@@ -17,6 +18,7 @@ L.Icon.Default.mergeOptions({ iconUrl: icon, iconRetinaUrl: icon2x, shadowUrl: s
 const mapEl = ref(null);
 const domain = ref('');
 const radius = ref(50);
+const fullscreen = ref(false);
 let map;
 let markers;
 let me;
@@ -99,7 +101,22 @@ onMounted(async () => {
     draw(true);
 });
 
-onBeforeUnmount(() => map?.remove());
+// Plein écran : la carte recouvre tout l'écran (superposition CSS, qui marche aussi sur iPhone) ; Échap ou le bouton la ramènent.
+const onKey = (e) => e.key === 'Escape' && fullscreen.value && !document.querySelector('dialog[open]') && (fullscreen.value = false);
+window.addEventListener('keydown', onKey);
+
+watch(fullscreen, async (on) => {
+    document.documentElement.style.overflow = on ? 'hidden' : '';
+    await nextTick();
+    map?.invalidateSize();
+    draw(true);
+});
+
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onKey);
+    document.documentElement.style.overflow = '';
+    map?.remove();
+});
 
 watch([items, () => contacts.pos], () => draw(false));
 watch([domain, radius], () => draw(true));
@@ -134,11 +151,51 @@ async function onLocate() {
             </button>
         </div>
 
-        <div ref="mapEl" class="z-0 h-[48vh] min-h-72 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800" role="application" aria-label="Carte de mes contacts" />
+        <div :class="fullscreen ? 'fixed inset-0 z-50 !m-0 bg-slate-50 dark:bg-slate-950' : 'relative'">
+            <!-- Le cadre change de taille ; l'élément de la carte garde des classes fixes (Leaflet y ajoute les siennes). -->
+            <div :class="fullscreen ? 'z-0 h-full w-full' : 'z-0 h-[48vh] min-h-72 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800'">
+                <div ref="mapEl" class="h-full w-full" role="application" aria-label="Carte de mes contacts" />
+            </div>
+
+            <!-- Boutons flottants au-dessus de la carte -->
+            <div class="absolute top-2 right-2 z-[1000] flex flex-col gap-2" :class="{ 'top-[calc(0.5rem+env(safe-area-inset-top))]': fullscreen }">
+                <button
+                    type="button"
+                    class="btn size-11 !p-0 shadow-md"
+                    :aria-label="fullscreen ? 'Quitter le plein écran' : 'Afficher la carte en plein écran'"
+                    :aria-pressed="fullscreen"
+                    @click="fullscreen = !fullscreen"
+                >
+                    <Icon :name="fullscreen ? 'shrink' : 'expand'" />
+                </button>
+                <button v-if="fullscreen" type="button" class="btn size-11 !p-0 shadow-md" :class="{ 'text-indigo-600': contacts.pos }" aria-label="Utiliser ma position" @click="onLocate">
+                    <Icon name="locate" />
+                </button>
+            </div>
+
+            <!-- Filtres en plein écran -->
+            <div
+                v-if="fullscreen"
+                class="absolute inset-x-2 bottom-[calc(0.5rem+env(safe-area-inset-bottom))] z-[1000] grid grid-cols-[1fr_1fr] gap-2 rounded-2xl bg-white/95 p-2 shadow-lg dark:bg-slate-900/95"
+            >
+                <select v-model="domain" class="input !min-h-10 !py-1" aria-label="Domaine">
+                    <option value="">Tous les domaines</option>
+                    <option v-for="d in domains" :key="d.key" :value="d.key">{{ d.label }}</option>
+                </select>
+                <select v-model.number="radius" class="input !min-h-10 !py-1" aria-label="Rayon">
+                    <option v-for="r in [1, 5, 10, 25, 50, 100]" :key="r" :value="r">{{ r }} km</option>
+                    <option :value="0">Illimité</option>
+                </select>
+            </div>
+        </div>
         <p class="muted">{{ hint }}</p>
 
         <ul class="space-y-2">
             <li v-for="c in items" :key="c.id"><ContactRow :contact="c" /></li>
         </ul>
+
+        <EmptyState v-if="contacts.loaded && !items.length" illustration="map" title="Rien à afficher sur la carte" small>
+            <p>Ajoute un lieu à tes contacts, ou élargis le rayon de recherche.</p>
+        </EmptyState>
     </div>
 </template>

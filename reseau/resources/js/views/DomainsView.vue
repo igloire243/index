@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import ContactRow from '../components/ContactRow.vue';
+import EmptyState from '../components/EmptyState.vue';
 import { allDomains, inDomain } from '../lib/contacts';
 import { contacts, distTo, loadContacts } from '../stores/contacts';
 import { toast } from '../stores/session';
@@ -27,9 +28,9 @@ const groups = computed(() =>
 <template>
     <div class="space-y-2">
         <p class="muted">Pour chaque domaine, la liste de ceux que tu peux appeler (les plus proches d’abord si ta position est connue).</p>
-        <p v-if="contacts.loaded && !groups.length" class="py-10 text-center text-slate-500">
-            Aucun domaine pour l’instant. Ajoute des domaines à tes contacts (juridique, santé, transport…).
-        </p>
+        <EmptyState v-if="contacts.loaded && !groups.length" illustration="contacts" title="Aucun domaine pour l’instant">
+            <p>Ajoute des domaines à tes contacts (juridique, santé, transport…) pour retrouver qui appeler.</p>
+        </EmptyState>
         <details v-for="g in groups" :key="g.key" class="group rounded-2xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
             <summary class="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 py-3 font-semibold [&::-webkit-details-marker]:hidden">
                 {{ g.label }}

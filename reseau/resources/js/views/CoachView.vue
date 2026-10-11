@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import EmptyState from '../components/EmptyState.vue';
 import Meter from '../components/Meter.vue';
 import { buildSuggestions, contactMeters, TRAITS } from '../lib/coach';
 import { seededRandom } from '../lib/coach';
@@ -62,7 +63,9 @@ async function done(s) {
 <template>
     <div class="space-y-3">
         <h2 class="text-base font-semibold">À faire aujourd’hui</h2>
-        <p v-if="contacts.loaded && !all.length" class="muted">Rien d’urgent. Ton réseau est bien entretenu, beau travail.</p>
+        <EmptyState v-if="contacts.loaded && !all.length" illustration="coach" title="Rien d’urgent" small>
+            <p>Ton réseau est bien entretenu, beau travail.</p>
+        </EmptyState>
 
         <article v-for="(s, i) in shown" :key="s.id" class="card rise space-y-1.5" :style="{ '--i': Math.min(i, 8) }">
             <span
