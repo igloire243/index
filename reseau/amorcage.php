@@ -1,15 +1,23 @@
 <?php
 
+use Illuminate\Contracts\Console\Kernel;
+use Symfony\Component\Console\Output\BufferedOutput;
+
 /**
- * PREMIER DÉPLOIEMENT SUR UN HÉBERGEMENT SANS LIGNE DE COMMANDE (LWS) : À LANCER UNE SEULE FOIS, par une tâche CRON
+ * PREMIER DÉPLOIEMENT SUR UN HÉBERGEMENT SANS LIGNE DE COMMANDE (LWS) : à lancer une seule fois, par une tâche CRON
  * à usage unique (`php /home/htdocs/home/reseau-app/amorcage.php`).
  *
- * Avant le tout premier envoi, `deploiement:finaliser` n'existe pas encore sur le serveur : ce script fait à la main
- * ce qu'il fera ensuite chaque minute, et prépare ce qui n'est jamais envoyé par FTP (dossiers du serveur, base
- * SQLite, premier utilisateur). Il ne s'exécute qu'en ligne de commande. Idempotent : le relancer ne casse rien.
+ * Tout se passe DANS CE SEUL PROCESSUS PHP : la copie des fichiers est faite en PHP pur et les commandes artisan
+ * sont appelées directement sur le noyau Laravel, jamais en relançant `php` en sous-processus. Certains
+ * hébergements mutualisés désactivent `exec`/`shell_exec`/`proc_open` ; un script qui en dépend échoue alors sans
+ * rien écrire nulle part de visible.
  *
- * Il attend un fichier `.env` posé par FTP dans le dépôt de passage (à côté de ce script) OU déjà présent dans
- * l'application. Il le recopie dans l'application puis SUPPRIME celui du dépôt (qui est sous htdocs).
+ * Chaque étape est journalisée dans `amorcage.log`, À CÔTÉ de ce fichier (donc dans le dépôt, visible par FTP ou le
+ * gestionnaire de fichiers) : le panneau CRON ne montre pas toujours la sortie d'une tâche.
+ *
+ * Attend un fichier `.env` posé par FTP dans le dépôt de passage (à côté de ce script) OU déjà présent dans
+ * l'application. Il le recopie dans l'application puis SUPPRIME celui du dépôt (qui est sous htdocs). Idempotent :
+ * le relancer ne casse rien.
  *
  * Optionnel dans ce .env, pour créer le premier utilisateur (les trois lignes sont retirées du .env ensuite) :
  *     AMORCAGE_EMAIL=...   AMORCAGE_NOM=...   AMORCAGE_MOT_DE_PASSE=...  (10 caractères minimum)
@@ -21,7 +29,15 @@ if (PHP_SAPI !== 'cli') {
 
 $depot = __DIR__;
 $destination = rtrim($argv[1] ?? dirname(__DIR__, 3).'/reseau-app', '/');
-$dire = fn (string $m) => print $m."\n";
+$journal = $depot.'/amorcage.log';
+
+function ecrit(string $journal, string $message): void
+{
+    file_put_contents($journal, '['.date('Y-m-d H:i:s')."] $message\n", FILE_APPEND | LOCK_EX);
+}
+$dire = fn (string $m) => ecrit($journal, $m);
+
+$dire('--- Amorçage lancé ---');
 
 if (! is_file($depot.'/VERSION')) {
     $dire('Dépôt vide : lance d’abord le workflow « Déployer sur LWS » dans GitHub.');
@@ -31,17 +47,34 @@ if (! is_file($depot.'/VERSION')) {
 $dire("Dépôt : $depot");
 $dire("Application : $destination");
 
+/** Copie récursive en PHP pur : aucune dépendance à exec()/shell_exec(), parfois désactivés sur l'hébergement. */
+function copierDossier(string $source, string $cible): void
+{
+    if (! is_dir($cible) && ! mkdir($cible, 0755, true) && ! is_dir($cible)) {
+        throw new RuntimeException("impossible de créer $cible");
+    }
+    foreach (new FilesystemIterator($source, FilesystemIterator::SKIP_DOTS) as $item) {
+        $dest = $cible.'/'.$item->getFilename();
+        if ($item->isDir()) {
+            copierDossier($item->getPathname(), $dest);
+
+            continue;
+        }
+        if (! copy($item->getPathname(), $dest)) {
+            throw new RuntimeException('échec de la copie de '.$item->getPathname());
+        }
+        @chmod($dest, fileperms($item->getPathname()));
+    }
+}
+
 // 1. Recopie du code
-if (! is_dir($destination) && ! mkdir($destination, 0755, true)) {
-    $dire('Impossible de créer le dossier de l’application.');
+try {
+    copierDossier($depot, $destination);
+    $dire('Code recopié (copie PHP, sans sous-processus).');
+} catch (Throwable $e) {
+    $dire('Copie échouée : '.$e->getMessage());
     exit(1);
 }
-exec('cp -a '.escapeshellarg($depot.'/.').' '.escapeshellarg($destination.'/').' 2>&1', $sortie, $code);
-if ($code !== 0) {
-    $dire('Copie échouée : '.implode("\n", $sortie));
-    exit(1);
-}
-$dire('Code recopié.');
 
 // 2. Le .env ne doit pas rester sous htdocs
 $envEnPlace = is_file($destination.'/.env');
@@ -50,8 +83,8 @@ if (is_file($depot.'/.env')) {
         $dire('Impossible de recopier le .env.');
         exit(1);
     }
-    chmod($destination.'/.env', 0600);
-    unlink($depot.'/.env');
+    @chmod($destination.'/.env', 0600);
+    @unlink($depot.'/.env');
     $dire('.env recopié dans l’application et supprimé du dépôt.');
 } elseif (! $envEnPlace) {
     $dire('Aucun .env : dépose-le par FTP dans '.$depot.'/ puis relance cette tâche.');
@@ -61,23 +94,45 @@ if (is_file($depot.'/.env')) {
 // 3. Dossiers et base qui appartiennent au serveur
 foreach (['storage/app/private', 'storage/framework/cache/data', 'storage/framework/sessions', 'storage/framework/views', 'storage/logs', 'bootstrap/cache', 'database'] as $dossier) {
     if (! is_dir("$destination/$dossier")) {
-        mkdir("$destination/$dossier", 0775, true);
+        @mkdir("$destination/$dossier", 0775, true);
     }
 }
 if (! is_file($destination.'/database/database.sqlite')) {
     touch($destination.'/database/database.sqlite');
 }
 
-// 4. Migrations et caches, dans un processus neuf
-$artisan = function (string $args) use ($destination, $dire): bool {
-    $dire('> php artisan '.$args);
-    exec('cd '.escapeshellarg($destination).' && '.escapeshellarg(PHP_BINARY).' artisan '.$args.' 2>&1', $sortie, $code);
-    $dire(implode("\n", $sortie));
+// 4. Migrations et caches : EN PROCESSUS, sur le noyau artisan de l'application fraîchement copiée — jamais par un
+// sous-processus `php artisan ...` (certains hébergements désactivent exec()/proc_open()).
+try {
+    require $destination.'/vendor/autoload.php';
+    $app = require $destination.'/bootstrap/app.php';
+} catch (Throwable $e) {
+    $dire('Démarrage de l’application impossible : '.$e->getMessage());
+    exit(1);
+}
+/** @var Kernel $kernel */
+$kernel = $app->make(Kernel::class);
+
+$artisan = function (string $commande, array $parametres = []) use ($kernel, $journal, $dire): bool {
+    $dire('> php artisan '.$commande);
+    $sortie = new BufferedOutput;
+    try {
+        $code = $kernel->call($commande, $parametres, $sortie);
+    } catch (Throwable $e) {
+        ecrit($journal, 'Erreur : '.$e->getMessage());
+
+        return false;
+    }
+    $texte = trim($sortie->fetch());
+    if ($texte !== '') {
+        ecrit($journal, $texte);
+    }
 
     return $code === 0;
 };
+
 $artisan('optimize:clear');
-if (! $artisan('migrate --force')) {
+if (! $artisan('migrate', ['--force' => true])) {
     $dire('La migration a échoué : corrige le .env (APP_KEY, DB_DATABASE…) puis relance.');
     exit(1);
 }
@@ -88,17 +143,18 @@ $valeur = fn (string $cle) => preg_match('/^'.$cle.'=(.*)$/m', $env, $m) ? trim(
 $email = $valeur('AMORCAGE_EMAIL');
 $motDePasse = $valeur('AMORCAGE_MOT_DE_PASSE');
 if ($email !== '' && $motDePasse !== '') {
-    $ok = $artisan('reseau:user '.escapeshellarg($email).' --name='.escapeshellarg($valeur('AMORCAGE_NOM') ?: $email).' --password='.escapeshellarg($motDePasse));
+    $ok = $artisan('reseau:user', ['email' => $email, '--name' => $valeur('AMORCAGE_NOM') ?: $email, '--password' => $motDePasse]);
     if ($ok) {
         file_put_contents($destination.'/.env', preg_replace('/^AMORCAGE_[A-Z_]*=.*\R?/m', '', $env));
         $dire('Utilisateur créé ; les lignes AMORCAGE_* ont été retirées du .env.');
+    } else {
+        $dire('La création de l’utilisateur a échoué (voir ci-dessus).');
     }
 }
 
 $artisan('optimize');
 
-// Les prochains déploiements passeront par `deploiement:finaliser` (CRON chaque minute) : cette version est déjà en place.
 @mkdir($destination.'/storage/app', 0775, true);
 file_put_contents($destination.'/storage/app/version-traitee', trim((string) file_get_contents($depot.'/VERSION')));
 
-$dire('Amorçage terminé. Active maintenant la tâche CRON de chaque minute : php '.$destination.'/cron.php');
+$dire('--- Amorçage terminé. Active maintenant la tâche CRON de chaque minute (cron.php ou le répartiteur) ---');
