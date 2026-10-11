@@ -5,9 +5,12 @@ import Meter from '../components/Meter.vue';
 import { buildSuggestions, contactMeters, TRAITS } from '../lib/coach';
 import { seededRandom } from '../lib/coach';
 import { isoDate } from '../lib/dates';
+import { useRouter } from 'vue-router';
 import { contacts, loadContacts, openDetail, openForm, saveContact } from '../stores/contacts';
+import { finance, loadFinance } from '../stores/finance';
 import { toast } from '../stores/session';
 
+const router = useRouter();
 const HIDDEN_KEY = 'reseau.coach.hidden';
 const hidden = ref(readHidden());
 const showAll = ref(false);
@@ -30,9 +33,12 @@ function hide(id, days) {
     }
 }
 
-onMounted(() => loadContacts().catch((e) => toast(e.message, 'error')));
+onMounted(() => {
+    loadContacts().catch((e) => toast(e.message, 'error'));
+    loadFinance().catch(() => {}); // facultatif : sans finances, le Coach ne parle que des contacts
+});
 
-const all = computed(() => (contacts.loaded ? buildSuggestions(contacts.list, { pos: contacts.pos, hidden: hidden.value }) : []));
+const all = computed(() => (contacts.loaded ? buildSuggestions(contacts.list, { pos: contacts.pos, hidden: hidden.value, debts: finance.debts }) : []));
 const shown = computed(() => (showAll.value ? all.value : all.value.slice(0, 5)));
 const meters = computed(() => contactMeters(contacts.list));
 
@@ -43,7 +49,8 @@ const anecdote = computed(() => {
 });
 
 function run(action) {
-    if (action.type === 'detail') openDetail(action.id);
+    if (action.type === 'route') router.push(action.to);
+    else if (action.type === 'detail') openDetail(action.id);
     else if (action.type === 'edit') openForm(action.id);
     else openForm(null, action.domains ? { domains: action.domains } : null);
 }
@@ -75,6 +82,7 @@ async function done(s) {
                     '!bg-amber-100 dark:!bg-amber-950': s.trait === 'anecdote',
                     '!bg-emerald-100 dark:!bg-emerald-950': s.trait === 'savoir',
                     '!bg-pink-100 dark:!bg-pink-950': s.trait === 'imprevu',
+                    '!bg-sky-100 dark:!bg-sky-950': s.trait === 'finance',
                 }"
                 >{{ TRAITS[s.trait] }}</span
             >

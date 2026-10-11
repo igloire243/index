@@ -57,6 +57,26 @@ class User extends Authenticatable
         return $this->hasOne(HealthGoal::class);
     }
 
+    public function accounts(): HasMany
+    {
+        return $this->hasMany(Account::class);
+    }
+
+    public function debts(): HasMany
+    {
+        return $this->hasMany(Debt::class);
+    }
+
+    public function assets(): HasMany
+    {
+        return $this->hasMany(Asset::class);
+    }
+
+    public function financeSetting(): HasOne
+    {
+        return $this->hasOne(FinanceSetting::class);
+    }
+
     public function passkeys(): HasMany
     {
         return $this->hasMany(Passkey::class);

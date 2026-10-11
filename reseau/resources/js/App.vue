@@ -14,10 +14,9 @@ const router = useRouter();
 
 const tabs = [
     { to: '/contacts', label: 'Contacts', icon: 'users' },
-    { to: '/carte', label: 'Carte', icon: 'pin' },
-    { to: '/domaines', label: 'Domaines', icon: 'grid' },
     { to: '/coach', label: 'Coach', icon: 'target' },
     { to: '/sante', label: 'Santé', icon: 'heart' },
+    { to: '/finances', label: 'Finances', icon: 'wallet' },
 ];
 
 const title = computed(() => route.meta.title || 'Réseau');
@@ -77,7 +76,7 @@ watch(
             class="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)] dark:border-slate-800 dark:bg-slate-900"
             aria-label="Navigation principale"
         >
-            <ul class="mx-auto grid max-w-2xl grid-cols-5">
+            <ul class="mx-auto grid max-w-2xl grid-cols-4">
                 <li v-for="t in tabs" :key="t.to">
                     <RouterLink
                         :to="t.to"

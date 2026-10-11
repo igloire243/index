@@ -1,7 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\DebtController;
+use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\GoalController;
 use App\Http\Controllers\Api\HabitController;
 use App\Http\Controllers\Api\MealController;
@@ -49,6 +53,31 @@ Route::prefix('api')->group(function () use ($date) {
 
         Route::get('goal', [GoalController::class, 'show']);
         Route::put('goal', [GoalController::class, 'update']);
+
+        Route::get('finance', [FinanceController::class, 'show']);
+        Route::put('finance/settings', [FinanceController::class, 'updateSettings']);
+
+        Route::get('accounts', [AccountController::class, 'index']);
+        Route::post('accounts', [AccountController::class, 'store']);
+        Route::post('accounts/transfer', [AccountController::class, 'transfer']);
+        Route::put('accounts/{id}', [AccountController::class, 'update'])->whereNumber('id');
+        Route::delete('accounts/{id}', [AccountController::class, 'destroy'])->whereNumber('id');
+        Route::get('accounts/{id}/movements', [AccountController::class, 'movements'])->whereNumber('id');
+        Route::post('accounts/{id}/movements', [AccountController::class, 'addMovement'])->whereNumber('id');
+        Route::post('accounts/{id}/adjust', [AccountController::class, 'adjust'])->whereNumber('id');
+        Route::delete('movements/{id}', [AccountController::class, 'destroyMovement'])->whereNumber('id');
+
+        Route::get('debts', [DebtController::class, 'index']);
+        Route::post('debts', [DebtController::class, 'store']);
+        Route::put('debts/{id}', [DebtController::class, 'update'])->whereNumber('id');
+        Route::delete('debts/{id}', [DebtController::class, 'destroy'])->whereNumber('id');
+        Route::post('debts/{id}/payments', [DebtController::class, 'addPayment'])->whereNumber('id');
+        Route::delete('debts/{id}/payments/{paymentId}', [DebtController::class, 'destroyPayment'])->whereNumber(['id', 'paymentId']);
+
+        Route::get('assets', [AssetController::class, 'index']);
+        Route::post('assets', [AssetController::class, 'store']);
+        Route::put('assets/{id}', [AssetController::class, 'update'])->whereNumber('id');
+        Route::delete('assets/{id}', [AssetController::class, 'destroy'])->whereNumber('id');
 
         Route::get('programs', [ProgramController::class, 'index']);
         Route::post('programs/{key}/adopt', [ProgramController::class, 'adopt'])->where('key', '[a-z0-9-]+');

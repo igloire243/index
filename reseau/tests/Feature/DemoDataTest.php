@@ -33,6 +33,42 @@ class DemoDataTest extends TestCase
         $this->assertSame('Africa/Kinshasa', $user->timezone);
     }
 
+    public function test_the_demo_includes_a_realistic_financial_picture(): void
+    {
+        $user = $this->demo();
+
+        $this->assertSame(6, $user->accounts()->count());
+        $this->assertSame(['USD', 'CDF', 'EUR'], $user->accounts()->orderByRaw("CASE currency WHEN 'USD' THEN 0 WHEN 'CDF' THEN 1 ELSE 2 END")->pluck('currency')->unique()->values()->all());
+        // Les soldes correspondent exactement à l'historique des mouvements.
+        foreach ($user->accounts as $account) {
+            $this->assertEqualsWithDelta($account->balance, (float) $account->movements()->sum('amount'), 0.01, $account->name);
+        }
+        // 3 240 au départ, +120 reçus de Nadine Mbala et −500 versés à la banque (règlements liés à ce compte).
+        $this->assertEquals(2860, $user->accounts()->where('name', 'Compte courant Rawbank')->value('balance'));
+        $this->assertSame(5, $user->debts()->where('direction', 'owed_to_me')->count());
+        $this->assertSame(3, $user->debts()->where('direction', 'i_owe')->count());
+        $this->assertGreaterThan(0, $user->debts()->whereNotNull('settled_at')->count());
+        $this->assertSame(7, $user->assets()->where('status', 'owned')->count());
+        $this->assertSame(3, $user->assets()->where('status', 'wanted')->count());
+        // Types de biens volontairement absents, pour montrer ce qu'il reste à acquérir.
+        $this->assertSame(0, $user->assets()->whereIn('category', ['equipement', 'mobilier', 'crypto', 'assurance'])->count());
+        $this->assertEquals(['CDF' => 2800, 'EUR' => 0.92], $user->financeSetting->rates);
+    }
+
+    public function test_demo_debts_cover_overdue_upcoming_and_partially_paid_cases(): void
+    {
+        $user = $this->demo();
+        $debts = collect($this->actingAs($user)->getJson('/api/debts')->json())->keyBy('counterparty');
+
+        $this->assertTrue($debts['Didier Lukusa']['overdue']);
+        $this->assertEquals(1000, $debts['Didier Lukusa']['remaining']);   // 1 500 − 500 reçus sur la caisse
+        $this->assertTrue($debts['Thomas Dubois']['overdue']);
+        $this->assertFalse($debts['Pascal Ngandu']['overdue']);
+        $this->assertNull($debts['Jean-Paul Mukendi']['due_on']);
+        $this->assertNotNull($debts['Nadine Mbala']['settled_at']);
+        $this->assertSame($user->contacts()->where('name', 'Didier Lukusa')->value('id'), $debts['Didier Lukusa']['contact_id']);
+    }
+
     public function test_demo_login_works(): void
     {
         $this->demo();

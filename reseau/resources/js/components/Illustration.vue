@@ -1,7 +1,9 @@
 <script setup>
 import { computed } from 'vue';
 import SceneCoach from './illustrations/SceneCoach.vue';
+import SceneAssets from './illustrations/SceneAssets.vue';
 import SceneContacts from './illustrations/SceneContacts.vue';
+import SceneFinance from './illustrations/SceneFinance.vue';
 import SceneHealth from './illustrations/SceneHealth.vue';
 import SceneLogin from './illustrations/SceneLogin.vue';
 import SceneMap from './illustrations/SceneMap.vue';
@@ -18,6 +20,8 @@ const SCENES = {
     meals: SceneMeals,
     progress: SceneProgress,
     security: SceneSecurity,
+    finance: SceneFinance,
+    assets: SceneAssets,
 };
 
 const props = defineProps({ name: { type: String, required: true } });

@@ -1,5 +1,6 @@
 import { daysSince, distKm, hasCoords, inDomain, norm } from './contacts';
-import { isoDate } from './dates';
+import { daysBetween, isoDate } from './dates';
+import { fmtMoney } from './finance';
 
 export const RELANCE_DAYS = 90;
 
@@ -8,7 +9,7 @@ export const COMMON_DOMAINS = [
     'éducation', 'informatique', 'artisanat', 'restauration', 'voyage', 'politique', 'commerce', 'énergie',
 ];
 
-export const TRAITS = { reseau: 'Réseau', anecdote: 'Anecdotes', savoir: 'Savoir', imprevu: 'Imprévisible' };
+export const TRAITS = { reseau: 'Réseau', anecdote: 'Anecdotes', savoir: 'Savoir', imprevu: 'Imprévisible', finance: 'Finances' };
 
 const QUESTIONS = [
     'Quelle erreur les débutants font-ils le plus souvent dans ton métier ?',
@@ -36,7 +37,7 @@ export function seededRandom(seed) {
  *
  * Chaque suggestion : { id, trait, score, title, text, contactId?, touch?, action: { label, type, id?, domains? } }
  */
-export function buildSuggestions(contacts, { pos = null, today = isoDate(), hidden = {} } = {}) {
+export function buildSuggestions(contacts, { pos = null, today = isoDate(), hidden = {}, debts = [] } = {}) {
     const rnd = seededRandom(today);
     const pick = (arr) => arr[Math.floor(rnd() * arr.length)];
     const out = [];
@@ -100,6 +101,33 @@ export function buildSuggestions(contacts, { pos = null, today = isoDate(), hidd
             add({ id: 'anec:' + c.id, trait: 'anecdote', score: 48, contactId: c.id, action: edit(c),
                 title: `Écris l’anecdote de ${c.name}`,
                 text: 'Une histoire vécue avec ce contact, en trois phrases (situation, tension, chute), sera ta meilleure carte pour illustrer un point ou le présenter.' });
+        }
+    }
+
+    // Créances à relancer et dettes à honorer.
+    const toRoute = (to, label) => ({ label, type: 'route', to });
+    for (const d of debts) {
+        if (d.remaining <= 0.004) continue;
+        const days = d.due_on ? daysBetween(today, d.due_on) : null;
+        const money = fmtMoney(d.remaining, d.currency);
+        if (d.direction === 'owed_to_me') {
+            if (days != null && days < 0) {
+                add({ id: 'creance:' + d.id, trait: 'finance', score: 86 + Math.min(-days / 10, 8), action: toRoute('/finances/creances', 'Voir la créance'),
+                    title: `Relance ${d.counterparty}`,
+                    text: `${money} à récupérer, échéance dépassée de ${-days} jour${-days > 1 ? 's' : ''}. Un message courtois et précis vaut mieux qu’un silence qui s’installe.` });
+            } else if (days != null && days <= 3) {
+                add({ id: 'creance:' + d.id, trait: 'finance', score: 62, action: toRoute('/finances/creances', 'Voir la créance'),
+                    title: `Échéance proche : ${d.counterparty}`,
+                    text: `${money} attendus ${days === 0 ? 'aujourd’hui' : `dans ${days} jour${days > 1 ? 's' : ''}`}. Un petit rappel amical la veille évite les oublis.` });
+            }
+        } else if (days != null && days < 0) {
+            add({ id: 'dette:' + d.id, trait: 'finance', score: 92, action: toRoute('/finances/dettes', 'Voir la dette'),
+                title: `Rembourse ${d.counterparty}`,
+                text: `${money} en retard de ${-days} jour${-days > 1 ? 's' : ''}. Honorer ses dettes protège ta réputation et tes relations ; si c’est impossible, prends les devants et propose un calendrier.` });
+        } else if (days != null && days <= 7) {
+            add({ id: 'dette:' + d.id, trait: 'finance', score: 70, action: toRoute('/finances/dettes', 'Voir la dette'),
+                title: `À rembourser bientôt : ${d.counterparty}`,
+                text: `${money} ${days === 0 ? 'à régler aujourd’hui' : `à régler dans ${days} jour${days > 1 ? 's' : ''}`}. Prévois la somme sur le bon compte dès maintenant.` });
         }
     }
 

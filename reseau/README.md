@@ -6,6 +6,7 @@ Application personnelle, utilisable depuis un téléphone (PWA), en trois partie
 - **Coach** : chaque jour, des suggestions pour cultiver ton réseau (relancer, présenter deux contacts, combler un domaine vide, rendre un service, écrire une anecdote, apprendre d'un expert, surprendre quelqu'un) et des jauges de progression.
 - **Formulaires en plusieurs étapes** partout (connexion, contact, habitude, objectif, mesure, repas), avec validation étape par étape, animations (désactivées si le système demande moins de mouvement) et comportement d'application mobile : pas de zoom, barre du haut aux couleurs de la page, pas d'action involontaire au double tap.
 - **Illustrations** originales intégrées (SVG, sans image externe) sur l'écran de connexion et dans les écrans vides, adaptées au mode sombre. **Carte en plein écran** (bouton en haut à droite de la carte, Échap pour quitter) avec filtres et position.
+- **Finances** : tous tes fonds quel que soit le compte, la source ou le lieu (banque, mobile money, espèces, épargne, tontine…) avec historique des mouvements et virements entre comptes (même entre devises) ; ce que les autres te doivent (créances) et ce que tu dois (dettes) avec échéances, remboursements partiels et lien avec un compte et un contact ; tes biens (immobilier, terrain, véhicule, commerce, or…) et la liste des **types de biens que tu ne possèdes pas encore**, avec des « envies » à planifier ; patrimoine net converti dans la devise de référence avec tes propres taux de change. Le Coach te rappelle les créances à relancer et les dettes à honorer.
 - **Santé** : programmes prêts à l'emploi (reprise en douceur, perte de poids progressive, reprise de poids saine, sommeil, soins du corps), planning hebdomadaire d'habitudes à cocher, planning des repas, suivi du poids / tour de taille / sommeil / énergie / humeur avec courbes, séries et taux de réalisation, **rappels par notification**.
 
 > Le module santé est un outil de suivi, pas un avis médical. Il ne prescrit ni régime ni calories.
@@ -44,6 +45,20 @@ Après une première connexion avec ton mot de passe : *Réglages → Face ID / 
 - Le bouton n'apparaît que sur les appareils déjà enregistrés. Il n'existe aucun moyen de contourner le mot de passe : sans clé enregistrée sur l'appareil, rien ne permet d'entrer.
 - Les tentatives sont limitées (10 échecs par 15 minutes), chaque réponse est vérifiée (signature, origine, défi à usage unique, compteur anti-clonage, vérification de la personne obligatoire).
 
+### Ouvrir l'application depuis un téléphone (même Wi-Fi)
+
+`php artisan serve` n'écoute par défaut que l'ordinateur lui-même (`127.0.0.1`) : le téléphone ne peut pas s'y connecter. Lance plutôt :
+
+```sh
+composer lan          # équivaut à : php artisan serve --host=0.0.0.0 --port=8000
+```
+
+puis ouvre `http://ADRESSE-IP-DE-TON-ORDINATEUR:8000` sur le téléphone (adresse : `ipconfig` sous Windows, `ipconfig getifaddr en0` sous Mac, `hostname -I` sous Linux). Le téléphone et l'ordinateur doivent être sur le même Wi-Fi, et le pare-feu doit autoriser PHP sur les réseaux privés (Windows te le demande au premier lancement).
+
+Si la page reste blanche : arrête `npm run dev` (ou supprime `public/hot`) puis relance `npm run build`. Le serveur de développement Vite écoute sur `localhost`, que le téléphone ne voit pas. Pour aller plus vite, décommente `PHP_CLI_SERVER_WORKERS=4` dans `.env`.
+
+Limite : en `http://` sur une adresse IP, la localisation, Face ID / empreinte, l'installation sur l'écran d'accueil et les notifications sont bloquées par le navigateur. Il faut HTTPS (tunnel ou déploiement) pour les essayer.
+
 ### Voir l'application avec des données de démonstration
 
 ```sh
@@ -54,7 +69,7 @@ Crée (ou recrée) le compte `demo@reseau.test` / `demo-password-123` avec 32 co
 
 Il n'y a **pas d'inscription publique** : les comptes se créent uniquement avec `reseau:user`. Pour changer un mot de passe, relance la même commande avec la même adresse.
 
-Tests : `composer test` (PHPUnit, 58 tests) et `npm test` (Vitest, 53 tests : coach, santé, dates, géolocalisation, clés d'accès).
+Tests : `composer test` (PHPUnit, 87 tests) et `npm test` (Vitest, 73 tests : coach, santé, finances, dates, géolocalisation, clés d'accès).
 
 ## Mise en ligne
 

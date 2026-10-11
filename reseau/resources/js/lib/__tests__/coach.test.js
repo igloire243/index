@@ -79,6 +79,45 @@ describe('buildSuggestions', () => {
     });
 });
 
+describe('suggestions financières', () => {
+    const today = '2026-10-12';
+    const debt = (o) => ({ id: 1, direction: 'owed_to_me', counterparty: 'Paul', amount: 100, remaining: 100, currency: 'USD', due_on: '2026-10-01', ...o });
+    const run = (debts) => buildSuggestions([contact({ id: 1, last_contact: ago(5), anecdote: 'x', lat: 1, lng: 1 })], { today, debts });
+
+    it('relance une créance dont l’échéance est dépassée', () => {
+        const s = run([debt()]).find((x) => x.id === 'creance:1');
+        expect(s.trait).toBe('finance');
+        expect(s.title).toBe('Relance Paul');
+        expect(s.text).toContain('11 jours');
+        expect(s.action).toEqual({ label: 'Voir la créance', type: 'route', to: '/finances/creances' });
+    });
+
+    it('signale une créance proche de son échéance, mais pas une lointaine ni sans échéance', () => {
+        expect(run([debt({ due_on: '2026-10-14' })]).some((x) => x.id === 'creance:1')).toBe(true);
+        expect(run([debt({ due_on: '2026-12-01' })]).some((x) => x.id === 'creance:1')).toBe(false);
+        expect(run([debt({ due_on: null })]).some((x) => x.id === 'creance:1')).toBe(false);
+    });
+
+    it('place une dette en retard au-dessus du reste', () => {
+        const list = run([debt({ id: 2, direction: 'i_owe', counterparty: 'Banque' })]);
+        expect(list[0].id).toBe('dette:2');
+        expect(list[0].title).toBe('Rembourse Banque');
+    });
+
+    it('prévient d’une dette à rembourser dans la semaine', () => {
+        expect(run([debt({ id: 3, direction: 'i_owe', due_on: '2026-10-16' })]).some((x) => x.id === 'dette:3')).toBe(true);
+        expect(run([debt({ id: 3, direction: 'i_owe', due_on: '2026-10-30' })]).some((x) => x.id === 'dette:3')).toBe(false);
+    });
+
+    it('ignore les dettes soldées', () => {
+        expect(run([debt({ remaining: 0 }), debt({ id: 2, direction: 'i_owe', remaining: 0 })]).some((x) => x.trait === 'finance')).toBe(false);
+    });
+
+    it('n’exige aucune donnée financière', () => {
+        expect(() => buildSuggestions([contact()], { today })).not.toThrow();
+    });
+});
+
 describe('contactMeters', () => {
     it('calcule les jauges', () => {
         const cs = [contact({ id: 1, anecdote: 'x', lat: 1, lng: 1, last_contact: ago(5) }), contact({ id: 2, domains: ['droit'] })];

@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Http\Controllers\Api\AccountController;
+use App\Models\Account;
 use App\Models\HabitLog;
 use App\Models\User;
 use Carbon\Carbon;
@@ -53,6 +55,7 @@ class DemoSeeder extends Seeder
         $this->habits($user, $today);
         $this->meals($user, $today);
         $this->measurements($user, $today);
+        $this->finance($user, $today);
     }
 
     private function chance(float $p): bool
@@ -237,5 +240,83 @@ class DemoSeeder extends Seeder
         }
 
         $user->healthGoal()->create(['goal' => 'gain', 'target_weight_kg' => 68.0, 'target_date' => $today->copy()->addDays(75)->toDateString()]);
+    }
+
+    /** Crée un compte dont l'historique se termine exactement sur le solde voulu. */
+    private function account(User $user, Carbon $today, array $attrs, float $target, array $movements): Account
+    {
+        $account = $user->accounts()->create($attrs + ['balance' => 0]);
+        $sum = array_sum(array_column($movements, 1));
+        $first = $today->copy()->subDays(70);
+
+        AccountController::move($account, round($target - $sum, 2), $first->toDateString(), 'Solde initial');
+        foreach ($movements as [$daysAgo, $amount, $note]) {
+            AccountController::move($account, $amount, $today->copy()->subDays($daysAgo)->toDateString(), $note);
+        }
+
+        return $account->fresh();
+    }
+
+    private function finance(User $user, Carbon $today): void
+    {
+        $user->financeSetting()->create(['base_currency' => 'USD', 'rates' => ['CDF' => 2800.0, 'EUR' => 0.92]]);
+
+        $courant = $this->account($user, $today, ['name' => 'Compte courant Rawbank', 'type' => 'bank', 'currency' => 'USD', 'institution' => 'Rawbank', 'location' => 'Agence de Gombe', 'source' => 'Salaire et honoraires'], 3240.0, [
+            [62, 1800, 'Salaire'], [58, -420, 'Loyer'], [49, -135.5, 'Courses du mois'], [33, 1800, 'Salaire'], [28, -420, 'Loyer'],
+            [20, -210, 'Facture électricité et internet'], [5, 1800, 'Salaire'], [2, -380, 'Scolarité'],
+        ]);
+        $caisse = $this->account($user, $today, ['name' => 'Caisse à la maison', 'type' => 'cash', 'currency' => 'USD', 'location' => 'Coffre-fort à la maison', 'source' => 'Ventes du commerce'], 650.0, [
+            [40, 300, 'Ventes de la semaine'], [26, -120, 'Fournisseur'], [11, 250, 'Ventes de la semaine'],
+        ]);
+        $this->account($user, $today, ['name' => 'M-Pesa', 'type' => 'mobile', 'currency' => 'CDF', 'institution' => 'Vodacom M-Pesa', 'location' => 'Téléphone', 'source' => 'Petits paiements clients'], 1450000.0, [
+            [30, 600000, 'Paiements clients'], [18, -250000, 'Crédit de communication et transport'], [4, 300000, 'Paiements clients'],
+        ]);
+        $this->account($user, $today, ['name' => 'Épargne projet terrain', 'type' => 'savings', 'currency' => 'USD', 'institution' => 'Equity BCDC', 'location' => 'Agence de Limete', 'source' => 'Économies mensuelles'], 4200.0, [
+            [60, 500, 'Versement'], [30, 500, 'Versement'], [2, 500, 'Versement'],
+        ]);
+        $this->account($user, $today, ['name' => 'Compte en France', 'type' => 'bank', 'currency' => 'EUR', 'institution' => 'Crédit Mutuel', 'location' => 'Paris', 'source' => 'Mission passée'], 780.0, []);
+        $this->account($user, $today, ['name' => 'Tontine de la famille', 'type' => 'tontine', 'currency' => 'CDF', 'location' => 'Chez la trésorière', 'source' => 'Cotisation mensuelle', 'notes' => 'Je reçois le pot en décembre.'], 600000.0, [
+            [45, 100000, 'Cotisation'], [15, 100000, 'Cotisation'],
+        ]);
+
+        $contact = fn (string $name) => $user->contacts()->where('name', $name)->first();
+        $debt = function (array $a, array $payments = []) use ($user, $today) {
+            $d = $user->debts()->create([
+                'direction' => $a['direction'], 'counterparty' => $a['who'], 'contact_id' => $a['contact']?->id, 'amount' => $a['amount'], 'currency' => $a['currency'] ?? 'USD',
+                'reason' => $a['reason'], 'opened_on' => $today->copy()->subDays($a['opened'])->toDateString(),
+                'due_on' => isset($a['due']) ? $today->copy()->addDays($a['due'])->toDateString() : null,
+            ]);
+            foreach ($payments as [$daysAgo, $amount, $account]) {
+                $movement = $account ? AccountController::move($account, $d->direction === 'owed_to_me' ? $amount : -$amount, $today->copy()->subDays($daysAgo)->toDateString(), 'Règlement '.$a['who']) : null;
+                $d->payments()->create(['date' => $today->copy()->subDays($daysAgo)->toDateString(), 'amount' => $amount, 'account_id' => $account?->id, 'movement_id' => $movement?->id]);
+            }
+            $d->update(['settled_at' => $d->remaining() <= 0.004 ? now() : null]);
+        };
+
+        // On me doit
+        $debt(['direction' => 'owed_to_me', 'who' => 'Didier Lukusa', 'contact' => $contact('Didier Lukusa'), 'amount' => 1500, 'reason' => 'Avance sur une marchandise', 'opened' => 75, 'due' => -12], [[30, 500, $caisse]]);
+        $debt(['direction' => 'owed_to_me', 'who' => 'Pascal Ngandu', 'contact' => $contact('Pascal Ngandu'), 'amount' => 800, 'reason' => 'Prêt pour un stock', 'opened' => 20, 'due' => 9]);
+        $debt(['direction' => 'owed_to_me', 'who' => 'Esther Banza', 'contact' => $contact('Esther Banza'), 'amount' => 900000, 'currency' => 'CDF', 'reason' => 'Frais avancés pour un dossier', 'opened' => 12, 'due' => 25]);
+        $debt(['direction' => 'owed_to_me', 'who' => 'Jean-Paul Mukendi', 'contact' => $contact('Jean-Paul Mukendi'), 'amount' => 1200, 'reason' => 'Prêt, sans échéance fixée', 'opened' => 140]);
+        $debt(['direction' => 'owed_to_me', 'who' => 'Nadine Mbala', 'contact' => $contact('Nadine Mbala'), 'amount' => 200, 'reason' => 'Dépannage', 'opened' => 90, 'due' => -50], [[60, 120, $courant], [35, 80, null]]);
+        // Je dois
+        $debt(['direction' => 'i_owe', 'who' => 'Grâce Nsimba (banque)', 'contact' => $contact('Grâce Nsimba'), 'amount' => 2000, 'reason' => 'Crédit de trésorerie', 'opened' => 100, 'due' => 20], [[40, 500, $courant]]);
+        $debt(['direction' => 'i_owe', 'who' => 'Propriétaire', 'contact' => null, 'amount' => 900, 'reason' => 'Arriérés de loyer', 'opened' => 45, 'due' => 3]);
+        $debt(['direction' => 'i_owe', 'who' => 'Thomas Dubois', 'contact' => $contact('Thomas Dubois'), 'amount' => 300, 'currency' => 'EUR', 'reason' => 'Honoraires', 'opened' => 60, 'due' => -4]);
+
+        $asset = fn (string $name, string $category, ?float $value, string $status = 'owned', array $more = []) => $user->assets()->create(
+            ['name' => $name, 'category' => $category, 'status' => $status, 'value' => $value, 'currency' => 'USD'] + $more
+        );
+        $asset('Maison à Ngaliema', 'residence', 85000, 'owned', ['location' => 'Kinshasa, Ngaliema', 'acquired_on' => '2019-06-15', 'purchase_price' => 62000]);
+        $asset('Toyota Hilux', 'vehicule', 18500, 'owned', ['location' => 'Kinshasa', 'acquired_on' => '2022-03-01', 'purchase_price' => 24000]);
+        $asset('Terrain à Mont-Ngafula', 'terrain', 22000, 'owned', ['location' => 'Kinshasa, Mont-Ngafula', 'acquired_on' => '2021-09-10', 'purchase_price' => 14000]);
+        $asset('Ordinateur portable', 'electronique', 1200, 'owned', ['acquired_on' => '2024-01-20', 'purchase_price' => 1500]);
+        $asset('Bijoux en or', 'or', 2400, 'owned', ['location' => 'Coffre-fort à la maison']);
+        $asset('Stock de marchandises', 'commerce', 6500, 'owned', ['location' => 'Boutique de Limete']);
+        $asset('Moto de livraison', 'vehicule', 1800, 'owned', ['location' => 'Boutique de Limete', 'acquired_on' => '2023-05-12', 'purchase_price' => 2200]);
+        // Projets d'acquisition : les types « equipement », « mobilier », « crypto », « assurance » restent volontairement vides.
+        $asset('Bien locatif à Limete', 'locatif', 45000, 'wanted', ['location' => 'Kinshasa, Limete']);
+        $asset('Plantation de cacao', 'agricole', 15000, 'wanted', ['notes' => 'À étudier avec un agronome.']);
+        $asset('Placement en parts de société', 'placement', 5000, 'wanted');
     }
 }
