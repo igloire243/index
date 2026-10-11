@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { api, hooks } from '../api';
+import { clearSecrets } from './secrets';
 
 // Le serveur reste maître du verrouillage ; le client suit l'échéance pour réagir sans attendre une erreur.
 const AWAY_LOCK_MS = 60_000;
@@ -38,6 +39,7 @@ function markLocked() {
     vault.unlocked = false;
     vault.dossiers = [];
     vault.listLoaded = false;
+    clearSecrets();
 }
 
 hooks.onVaultLocked = markLocked;
