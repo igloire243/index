@@ -11,6 +11,9 @@ Application personnelle, utilisable depuis un téléphone (PWA), en trois partie
 - **Santé** : programmes prêts à l'emploi (reprise en douceur, perte de poids progressive, reprise de poids saine, sommeil, soins du corps), planning hebdomadaire d'habitudes à cocher, planning des repas, suivi du poids / tour de taille / sommeil / énergie / humeur avec courbes, séries et taux de réalisation, **rappels par notification**.
 - **Coffre (dossiers confidentiels)** : des dossiers sur des personnes ou des sujets, rattachables à un contact (bouton « Dossier confidentiel » sur la fiche), avec résumé, **photos, vidéos, enregistrements audio** (micro intégré), documents. Photo et vidéo peuvent être prises directement depuis le téléphone. Voir la section *Coffre* plus bas.
 - **Mots de passe** (dans le Coffre) : comptes en ligne, comptes bancaires, cartes (PIN), codes PIN, **schémas de déverrouillage** (grille 3 × 3), Wi-Fi, notes sécurisées. Générateur de mot de passe et de code, indicateur de robustesse, champs libres (codes de secours, CVV…), favoris, recherche. Les secrets restent masqués jusqu'à ce que tu les affiches (remasqués après 20 s) et le presse-papiers est vidé 30 s après une copie.
+- **Partage ponctuel** : un lien à usage unique et avec expiration (1 h, 24 h ou 7 j) pour montrer un document du Coffre à quelqu'un sans lui donner accès au reste.
+- **Export chiffré du Coffre** : une sauvegarde de tes dossiers et mots de passe en un clic, indépendante du FTP, protégée par un mot de passe que tu choisis. Se rouvre hors ligne avec `dechiffrer.html`, une page qui fonctionne dans n'importe quel navigateur.
+- **Objectif de réseau** et **recherche unique** (contacts, Coffre, finances) dans le Coach et l'en-tête de l'application ; **journal des nouveautés** (`/nouveautes`).
 
 > Le module santé est un outil de suivi, pas un avis médical. Il ne prescrit ni régime ni calories.
 
