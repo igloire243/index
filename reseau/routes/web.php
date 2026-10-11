@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DebtController;
 use App\Http\Controllers\Api\DossierController;
 use App\Http\Controllers\Api\DossierFileController;
+use App\Http\Controllers\Api\ExportController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\GoalController;
 use App\Http\Controllers\Api\HabitController;
@@ -126,6 +127,8 @@ Route::prefix('api')->group(function () use ($date) {
             Route::get('dossier-files/{id}/partages', [DossierFileController::class, 'shareIndex'])->whereNumber('id');
             Route::post('dossier-files/{id}/partages', [DossierFileController::class, 'shareStore'])->whereNumber('id');
             Route::delete('dossier-file-shares/{id}', [DossierFileController::class, 'shareDestroy'])->whereNumber('id');
+
+            Route::post('export', [ExportController::class, 'store']);
         });
 
         Route::get('push/key', [PushController::class, 'key']);
