@@ -5,6 +5,7 @@ import { toast } from '../../stores/session';
 import { removeFile, updateFile } from '../../stores/vault';
 import Icon from '../Icon.vue';
 import Sheet from '../Sheet.vue';
+import ShareSheet from './ShareSheet.vue';
 
 const props = defineProps({ modelValue: Boolean, file: { type: Object, default: null } });
 const emit = defineEmits(['update:modelValue', 'updated', 'deleted']);
@@ -13,6 +14,7 @@ const open = computed({ get: () => props.modelValue, set: (v) => emit('update:mo
 const name = ref('');
 const caption = ref('');
 const busy = ref(false);
+const sharing = ref(false);
 
 watch(
     () => props.file?.id,
@@ -74,6 +76,7 @@ async function remove() {
 
             <div class="flex flex-wrap justify-between gap-2">
                 <a class="btn" :href="url" :download="file.name"><Icon name="download" :size="18" /> Télécharger</a>
+                <button type="button" class="btn" @click="sharing = true"><Icon name="share" :size="18" /> Partager</button>
                 <button type="button" class="btn btn-primary" :disabled="!dirty || busy" @click="save">Enregistrer</button>
             </div>
             <div class="flex justify-between gap-2">
@@ -82,4 +85,5 @@ async function remove() {
             </div>
         </div>
     </Sheet>
+    <ShareSheet v-model="sharing" :file="file" />
 </template>

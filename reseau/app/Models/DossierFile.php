@@ -4,12 +4,18 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DossierFile extends Model
 {
     public function dossier(): BelongsTo
     {
         return $this->belongsTo(Dossier::class);
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(DossierFileShare::class);
     }
 
     protected $hidden = ['user_id', 'uuid', 'encrypted_key', 'received', 'total_chunks'];

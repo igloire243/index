@@ -56,13 +56,15 @@ export const router = createRouter({
         { path: '/reglages', name: 'reglages', component: () => import('./views/SettingsView.vue'), meta: { title: 'Réglages' } },
         { path: '/nouveautes', name: 'nouveautes', component: () => import('./views/ChangelogView.vue'), meta: { title: 'Nouveautés' } },
         { path: '/recherche', name: 'recherche', component: () => import('./views/SearchView.vue'), meta: { title: 'Recherche' } },
+        // Lien de partage public : accessible sans compte, le jeton dans l'URL est la seule preuve d'accès.
+        { path: '/partage/:token', name: 'partage', component: () => import('./views/ShareView.vue'), meta: { title: 'Document partagé', public: true } },
         { path: '/:pathMatch(.*)*', redirect: '/contacts' },
     ],
     scrollBehavior: () => ({ top: 0 }),
 });
 
 router.beforeEach((to) => {
-    if (!session.user && to.name !== 'login') {
+    if (!session.user && to.name !== 'login' && !to.meta.public) {
         return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} };
     }
     if (session.user && to.name === 'login') return '/contacts';
