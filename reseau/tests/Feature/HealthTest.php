@@ -176,7 +176,8 @@ class HealthTest extends TestCase
 
     public function test_goal_roundtrip(): void
     {
-        $this->getJson('/api/goal')->assertOk()->assertJsonPath('goal', null);
+        $this->getJson('/api/goal')->assertOk();
+        $this->assertSame('null', $this->getJson('/api/goal')->getContent(), 'sans objectif, la réponse est un `null` JSON et non un objet vide');
 
         $this->putJson('/api/goal', ['goal' => 'gain', 'target_weight_kg' => 68, 'target_date' => '2027-03-01'])->assertOk()->assertJsonPath('goal', 'gain');
         $this->putJson('/api/goal', ['goal' => 'maintain', 'target_weight_kg' => null])->assertOk();

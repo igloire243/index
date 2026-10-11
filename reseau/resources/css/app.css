@@ -11,6 +11,45 @@
     html {
         -webkit-tap-highlight-color: transparent;
         -webkit-text-size-adjust: 100%;
+        /* Pas de zoom par pincement ni par double tap : on ne garde que le défilement. */
+        touch-action: pan-x pan-y;
+        overscroll-behavior: none;
+    }
+    * {
+        /* Un double tap sur un bouton ou un texte ne doit rien sélectionner ni afficher de menu. */
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        user-select: none;
+    }
+    input,
+    textarea,
+    select,
+    [contenteditable],
+    .selectable,
+    .selectable * {
+        -webkit-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
+    }
+    a,
+    button,
+    [role='button'],
+    summary,
+    label {
+        touch-action: manipulation; /* supprime le délai et le zoom du double tap */
+    }
+    img,
+    svg {
+        -webkit-user-drag: none;
+        user-drag: none;
+    }
+    /* iOS zoome automatiquement sur un champ dont le texte fait moins de 16 px : on l'évite. */
+    @media (max-width: 767px) {
+        input,
+        select,
+        textarea {
+            font-size: 16px !important;
+        }
     }
     body {
         font-family: var(--font-sans);
@@ -63,3 +102,108 @@
         @apply text-sm text-slate-500 dark:text-slate-400;
     }
 }
+
+/* ---------------------------------------------------------------------------
+   Animations (désactivées si l'utilisateur demande moins de mouvement)
+--------------------------------------------------------------------------- */
+
+@keyframes sheet-in {
+    from { opacity: 0; transform: translateY(36px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes sheet-out {
+    to { opacity: 0; transform: translateY(28px) scale(0.98); }
+}
+@keyframes backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@keyframes rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+}
+@keyframes pop {
+    0% { transform: scale(0.3); opacity: 0; }
+    60% { transform: scale(1.25); opacity: 1; }
+    100% { transform: scale(1); }
+}
+@keyframes confetti-fall {
+    0% { transform: translate3d(0, 0, 0) rotate(0deg); opacity: 1; }
+    100% { transform: translate3d(var(--dx), 75vh, 0) rotate(var(--rot)); opacity: 0; }
+}
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-6px); }
+    75% { transform: translateX(6px); }
+}
+
+.rise {
+    animation: rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation-delay: calc(var(--i, 0) * 45ms);
+}
+.shake {
+    animation: shake 0.3s ease-in-out;
+}
+
+dialog[open] {
+    animation: sheet-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+dialog[open]::backdrop {
+    animation: backdrop-in 0.25s ease-out;
+}
+dialog.closing {
+    animation: sheet-out 0.18s ease-in forwards;
+}
+dialog.closing::backdrop {
+    opacity: 0;
+    transition: opacity 0.18s ease-in;
+}
+
+/* Étapes d'un formulaire : glissement dans le sens de la navigation */
+.step-next-enter-active,
+.step-next-leave-active,
+.step-prev-enter-active,
+.step-prev-leave-active {
+    transition: opacity 0.16s ease, transform 0.16s ease;
+}
+.step-next-enter-from { opacity: 0; transform: translateX(32px); }
+.step-next-leave-to { opacity: 0; transform: translateX(-32px); }
+.step-prev-enter-from { opacity: 0; transform: translateX(-32px); }
+.step-prev-leave-to { opacity: 0; transform: translateX(32px); }
+
+/* Changement de page */
+.page-enter-active { transition: opacity 0.22s ease, transform 0.22s ease; }
+.page-leave-active { transition: opacity 0.1s ease; }
+.page-enter-from { opacity: 0; transform: translateY(10px); }
+.page-leave-to { opacity: 0; }
+
+.toast-enter-active, .toast-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(14px) scale(0.96); }
+
+.pop-enter-active { animation: pop 0.38s cubic-bezier(0.2, 0.9, 0.3, 1.3); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.confetti-layer {
+    position: fixed; inset: 0; z-index: 120; overflow: hidden; pointer-events: none;
+}
+.confetti-layer > span {
+    position: absolute; top: 30%; width: 9px; height: 14px; border-radius: 2px;
+    animation: confetti-fall var(--dur, 1.6s) cubic-bezier(0.2, 0.6, 0.4, 1) forwards;
+    animation-delay: var(--delay, 0s);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-delay: 0ms !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Listes : apparition et disparition des éléments */
+.list-enter-active, .list-leave-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.list-enter-from, .list-leave-to { opacity: 0; transform: translateX(-18px); }
+.list-leave-active { position: absolute; width: 100%; }
+.list-move { transition: transform 0.25s ease; }

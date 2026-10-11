@@ -84,7 +84,7 @@ function draw(fit) {
 }
 
 onMounted(async () => {
-    map = L.map(mapEl.value).setView([0, 20], 2);
+    map = L.map(mapEl.value, { doubleClickZoom: false }).setView([0, 20], 2);
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -108,7 +108,7 @@ async function onLocate() {
     if (await locate()) {
         toast('Position mise à jour.');
         draw(true);
-    } else toast('Position indisponible : autorise la localisation.', 'error');
+    } else toast(contacts.posError, 'error');
 }
 </script>
 

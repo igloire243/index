@@ -1,6 +1,7 @@
 import { reactive } from 'vue';
 import { api } from '../api';
 import { distKm, hasCoords } from '../lib/contacts';
+import { describeGeoError } from '../lib/geo';
 
 const POS_KEY = 'reseau.pos';
 
@@ -13,7 +14,7 @@ function readPos() {
     }
 }
 
-export const contacts = reactive({ list: [], loaded: false, loading: false, pos: readPos() });
+export const contacts = reactive({ list: [], loaded: false, loading: false, pos: readPos(), posError: null });
 
 /** Fenêtres ouvertes depuis n'importe quelle vue (fiche détail et formulaire). */
 export const ui = reactive({ detailId: null, form: { open: false, id: null, prefill: null } });
@@ -60,9 +61,15 @@ export async function deleteAllContacts() {
 
 export const distTo = (c) => (contacts.pos && hasCoords(c) ? distKm(contacts.pos, c) : null);
 
+/** Demande la position. Renvoie null en cas d'échec, et la raison (avec le geste de réparation) est dans contacts.posError. */
 export function locate() {
     return new Promise((resolve) => {
-        if (!navigator.geolocation) return resolve(null);
+        contacts.posError = null;
+        const secure = window.isSecureContext !== false;
+        if (!secure || !navigator.geolocation) {
+            contacts.posError = describeGeoError(null, { secure, supported: !!navigator.geolocation });
+            return resolve(null);
+        }
         navigator.geolocation.getCurrentPosition(
             (p) => {
                 contacts.pos = { lat: p.coords.latitude, lng: p.coords.longitude, t: Date.now() };
@@ -73,8 +80,11 @@ export function locate() {
                 }
                 resolve(contacts.pos);
             },
-            () => resolve(null),
-            { enableHighAccuracy: false, timeout: 12000, maximumAge: 60000 },
+            (err) => {
+                contacts.posError = describeGeoError(err);
+                resolve(null);
+            },
+            { enableHighAccuracy: false, timeout: 15000, maximumAge: 60000 },
         );
     });
 }

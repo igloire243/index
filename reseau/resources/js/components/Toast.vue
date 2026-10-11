@@ -3,6 +3,7 @@ import { session } from '../stores/session';
 </script>
 
 <template>
+    <Transition name="toast">
     <div
         v-if="session.toast"
         role="status"
@@ -12,4 +13,5 @@ import { session } from '../stores/session';
     >
         {{ session.toast.message }}
     </div>
+    </Transition>
 </template>

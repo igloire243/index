@@ -4,6 +4,7 @@ Application personnelle, utilisable depuis un téléphone (PWA), en trois partie
 
 - **Contacts** : carnet moderne avec domaines (« qui contacter pour… »), rôle, anecdote, services dus ou rendus, carte OpenStreetMap, distance par rapport à ta position, import Google Contacts (`.vcf`).
 - **Coach** : chaque jour, des suggestions pour cultiver ton réseau (relancer, présenter deux contacts, combler un domaine vide, rendre un service, écrire une anecdote, apprendre d'un expert, surprendre quelqu'un) et des jauges de progression.
+- **Formulaires en plusieurs étapes** partout (connexion, contact, habitude, objectif, mesure, repas), avec validation étape par étape, animations (désactivées si le système demande moins de mouvement) et comportement d'application mobile : pas de zoom, barre du haut aux couleurs de la page, pas d'action involontaire au double tap.
 - **Santé** : programmes prêts à l'emploi (reprise en douceur, perte de poids progressive, reprise de poids saine, sommeil, soins du corps), planning hebdomadaire d'habitudes à cocher, planning des repas, suivi du poids / tour de taille / sommeil / énergie / humeur avec courbes, séries et taux de réalisation, **rappels par notification**.
 
 > Le module santé est un outil de suivi, pas un avis médical. Il ne prescrit ni régime ni calories.
@@ -21,9 +22,17 @@ php artisan reseau:user toi@exemple.com   # crée ton compte (mot de passe deman
 php artisan serve                  # http://127.0.0.1:8000
 ```
 
+### Voir l'application avec des données de démonstration
+
+```sh
+php artisan reseau:demo
+```
+
+Crée (ou recrée) le compte `demo@reseau.test` / `demo-password-123` avec 32 contacts fictifs, 70 jours d'habitudes cochées, des repas planifiés, des pesées et un objectif. Les dates sont relatives à aujourd'hui, donc l'écran paraît toujours vivant. La commande ne touche qu'à ce compte, et refuse de tourner en production sans `--force`.
+
 Il n'y a **pas d'inscription publique** : les comptes se créent uniquement avec `reseau:user`. Pour changer un mot de passe, relance la même commande avec la même adresse.
 
-Tests : `composer test` (PHPUnit, 36 tests) et `npm test` (Vitest, logique du coach et de la santé).
+Tests : `composer test` (PHPUnit, 43 tests) et `npm test` (Vitest, 49 tests : coach, santé, dates, géolocalisation).
 
 ## Mise en ligne
 

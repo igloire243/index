@@ -72,7 +72,7 @@ async function remove() {
                 >
             </div>
 
-            <dl class="space-y-3 text-sm">
+            <dl class="selectable space-y-3 text-sm">
                 <div v-if="contact.phone"><dt class="muted">Téléphone</dt><dd>{{ contact.phone }}</dd></div>
                 <div v-if="contact.email"><dt class="muted">E-mail</dt><dd class="break-all">{{ contact.email }}</dd></div>
                 <div v-if="contact.place">

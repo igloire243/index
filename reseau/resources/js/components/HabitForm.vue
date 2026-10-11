@@ -5,6 +5,7 @@ import { CATEGORIES } from '../lib/health';
 import { saveHabit } from '../stores/health';
 import { toast } from '../stores/session';
 import Sheet from './Sheet.vue';
+import Wizard from './Wizard.vue';
 
 const props = defineProps({ modelValue: Boolean, habit: { type: Object, default: null } });
 const emit = defineEmits(['update:modelValue']);
@@ -29,12 +30,21 @@ watch(
     },
 );
 
+const steps = computed(() => [
+    { key: 'habit', title: 'Habitude', valid: form.name.trim().length > 0, hint: 'Donne un nom à cette habitude pour continuer.' },
+    { key: 'when', title: 'Quand ?', valid: form.days.length > 0, hint: 'Choisis au moins un jour.' },
+    { key: 'extra', title: 'Rappel' },
+]);
+
 const toggleDay = (n) => {
     form.days = form.days.includes(n) ? form.days.filter((d) => d !== n) : [...form.days, n].sort();
 };
+const summary = computed(() => {
+    const days = form.days.length === 7 ? 'tous les jours' : form.days.map((n) => WEEKDAYS[n - 1].name.slice(0, 3)).join(', ');
+    return `${days}${form.time ? ' à ' + form.time : ''}`;
+});
 
 async function submit() {
-    if (!form.days.length) return toast('Choisis au moins un jour.', 'error');
     busy.value = true;
     try {
         await saveHabit(
@@ -63,56 +73,75 @@ async function submit() {
 
 <template>
     <Sheet v-model="open" :title="habit ? 'Modifier l’habitude' : 'Nouvelle habitude'">
-        <form class="space-y-3" @submit.prevent="submit">
-            <div>
-                <label class="label" for="h-name">Nom *</label>
-                <input id="h-name" v-model="form.name" class="input" required maxlength="120" placeholder="Boire un grand verre d’eau" />
-            </div>
-            <div>
-                <label class="label" for="h-cat">Catégorie</label>
-                <select id="h-cat" v-model="form.category" class="input">
-                    <option v-for="(label, key) in CATEGORIES" :key="key" :value="key">{{ label }}</option>
-                </select>
-            </div>
-            <fieldset>
-                <legend class="label">Jours</legend>
-                <div class="flex gap-1.5" role="group" aria-label="Jours de la semaine">
-                    <button
-                        v-for="d in WEEKDAYS"
-                        :key="d.n"
-                        type="button"
-                        class="btn flex-1 !px-0"
-                        :class="{ 'btn-primary': form.days.includes(d.n) }"
-                        :aria-pressed="form.days.includes(d.n)"
-                        :aria-label="d.name"
-                        @click="toggleDay(d.n)"
-                    >
-                        {{ d.short }}
-                    </button>
-                </div>
-                <div class="mt-2 flex gap-2">
-                    <button type="button" class="btn btn-sm" @click="form.days = [1, 2, 3, 4, 5, 6, 7]">Tous les jours</button>
-                    <button type="button" class="btn btn-sm" @click="form.days = [1, 2, 3, 4, 5]">Jours ouvrés</button>
-                </div>
-            </fieldset>
-            <div class="grid grid-cols-2 items-end gap-3">
-                <div>
-                    <label class="label" for="h-time">Heure</label>
-                    <input id="h-time" v-model="form.time" class="input" type="time" />
-                </div>
-                <label class="flex min-h-11 items-center gap-2 text-sm" :class="{ 'opacity-50': !form.time }">
-                    <input v-model="form.reminder" type="checkbox" class="size-5 rounded" :disabled="!form.time" />
-                    Me le rappeler
-                </label>
-            </div>
-            <div>
-                <label class="label" for="h-notes">Notes</label>
-                <textarea id="h-notes" v-model="form.notes" class="input" rows="2" maxlength="500" />
-            </div>
-            <div class="flex justify-end gap-2 pt-1">
-                <button type="button" class="btn" @click="open = false">Annuler</button>
-                <button type="submit" class="btn btn-primary" :disabled="busy">Enregistrer</button>
-            </div>
-        </form>
+        <Wizard :steps="steps" :busy="busy" submit-label="Enregistrer l’habitude" @submit="submit" @cancel="open = false">
+            <template #default="{ step }">
+                <template v-if="step.key === 'habit'">
+                    <div>
+                        <label class="label" for="h-name">Nom *</label>
+                        <input id="h-name" v-model="form.name" class="input" required maxlength="120" placeholder="Boire un grand verre d’eau" autocomplete="off" />
+                    </div>
+                    <div>
+                        <span class="label">Catégorie</span>
+                        <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="Catégorie">
+                            <button
+                                v-for="(label, key) in CATEGORIES"
+                                :key="key"
+                                type="button"
+                                role="radio"
+                                :aria-checked="form.category === key"
+                                class="chip"
+                                :class="{ 'chip-on': form.category === key }"
+                                @click="form.category = key"
+                            >
+                                {{ label }}
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <template v-else-if="step.key === 'when'">
+                    <fieldset>
+                        <legend class="label">Jours</legend>
+                        <div class="flex gap-1.5" role="group" aria-label="Jours de la semaine">
+                            <button
+                                v-for="d in WEEKDAYS"
+                                :key="d.n"
+                                type="button"
+                                class="btn flex-1 !px-0 transition-colors"
+                                :class="{ 'btn-primary': form.days.includes(d.n) }"
+                                :aria-pressed="form.days.includes(d.n)"
+                                :aria-label="d.name"
+                                @click="toggleDay(d.n)"
+                            >
+                                {{ d.short }}
+                            </button>
+                        </div>
+                        <div class="mt-2 flex gap-2">
+                            <button type="button" class="btn btn-sm" @click="form.days = [1, 2, 3, 4, 5, 6, 7]">Tous les jours</button>
+                            <button type="button" class="btn btn-sm" @click="form.days = [1, 2, 3, 4, 5]">Jours ouvrés</button>
+                        </div>
+                    </fieldset>
+                    <div>
+                        <label class="label" for="h-time">Heure <span class="muted">(facultatif)</span></label>
+                        <input id="h-time" v-model="form.time" class="input" type="time" />
+                    </div>
+                </template>
+
+                <template v-else>
+                    <label class="flex min-h-11 items-center gap-3 rounded-xl border border-slate-200 px-3 dark:border-slate-700" :class="{ 'opacity-50': !form.time }">
+                        <input v-model="form.reminder" type="checkbox" class="size-5 rounded" :disabled="!form.time" />
+                        <span class="text-sm">Me le rappeler par notification{{ form.time ? '' : ' (indique d’abord une heure)' }}</span>
+                    </label>
+                    <div>
+                        <label class="label" for="h-notes">Notes</label>
+                        <textarea id="h-notes" v-model="form.notes" class="input" rows="2" maxlength="500" />
+                    </div>
+                    <div class="rounded-2xl bg-slate-50 p-3 text-sm dark:bg-slate-800">
+                        <div class="font-semibold">{{ form.name }}</div>
+                        <div class="muted">{{ CATEGORIES[form.category] }} · {{ summary }}</div>
+                    </div>
+                </template>
+            </template>
+        </Wizard>
     </Sheet>
 </template>

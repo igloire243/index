@@ -28,7 +28,7 @@ export async function loadHealth(force = false) {
         health.habits = habits;
         health.logs = new Set(logs.map((l) => logKey(l.habit_id, l.date)));
         health.measurements = measurements;
-        health.goal = goal;
+        health.goal = goal && goal.goal ? goal : null; // jamais un objet vide
         health.loaded = true;
     } finally {
         health.loading = false;
@@ -40,8 +40,20 @@ export async function loadPrograms() {
 }
 
 /** Coche ou décoche une habitude ; l'affichage change tout de suite et revient en arrière si le serveur refuse. */
+const inFlight = new Set();
+
 export async function toggleHabit(habit, date) {
     const key = logKey(habit.id, date);
+    if (inFlight.has(key)) return; // un double tap ne doit pas cocher puis décocher aussitôt
+    inFlight.add(key);
+    try {
+        await toggleHabitNow(habit, date, key);
+    } finally {
+        inFlight.delete(key);
+    }
+}
+
+async function toggleHabitNow(habit, date, key) {
     const wasDone = health.logs.has(key);
     if (wasDone) health.logs.delete(key);
     else health.logs.add(key);
@@ -87,6 +99,17 @@ export async function addMeal(data) {
 }
 
 export async function setMealDone(meal, done) {
+    const key = 'meal|' + meal.id;
+    if (inFlight.has(key)) return;
+    inFlight.add(key);
+    try {
+        await setMealDoneNow(meal, done);
+    } finally {
+        inFlight.delete(key);
+    }
+}
+
+async function setMealDoneNow(meal, done) {
     const previous = meal.done_at;
     meal.done_at = done ? new Date().toISOString() : null;
     try {

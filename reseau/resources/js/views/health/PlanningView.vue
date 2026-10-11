@@ -91,8 +91,8 @@ const weekLabel = computed(() => `${fmtShort(days.value[0])} – ${fmtShort(days
                                 :disabled="cell(h, d) === 'off' || cell(h, d) === 'future'"
                                 @click="toggle(h, d)"
                             >
-                                <Icon v-if="cell(h, d) === 'done'" name="check" :size="16" />
-                                <span v-else-if="cell(h, d) === 'off'" class="size-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+                                <Transition name="pop"><Icon v-if="cell(h, d) === 'done'" name="check" :size="16" /></Transition>
+                                <span v-if="cell(h, d) === 'off'" class="size-1 rounded-full bg-slate-300 dark:bg-slate-700" />
                             </button>
                         </td>
                     </tr>
@@ -110,7 +110,7 @@ const weekLabel = computed(() => `${fmtShort(days.value[0])} – ${fmtShort(days
             <RouterLink to="/sante/programmes" class="btn btn-primary">Choisir un programme</RouterLink>
         </div>
 
-        <ul class="space-y-2">
+        <TransitionGroup name="list" tag="ul" class="relative space-y-2">
             <li v-for="h in habits" :key="h.id" class="card flex items-center gap-3 !p-3">
                 <div class="min-w-0 flex-1">
                     <div class="font-medium break-words">{{ h.name }}</div>
@@ -123,7 +123,7 @@ const weekLabel = computed(() => `${fmtShort(days.value[0])} – ${fmtShort(days
                 <button type="button" class="btn size-10 !p-0" aria-label="Modifier" @click="edit(h)"><Icon name="edit" :size="18" /></button>
                 <button type="button" class="btn btn-danger size-10 !p-0" aria-label="Retirer" @click="archive(h)"><Icon name="trash" :size="18" /></button>
             </li>
-        </ul>
+        </TransitionGroup>
 
         <RouterLink to="/sante/programmes" class="muted block text-center underline">Choisir un programme prêt à l’emploi</RouterLink>
 

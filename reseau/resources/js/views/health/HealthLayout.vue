@@ -31,7 +31,11 @@ onMounted(() => loadHealth().catch((e) => toast(e.message, 'error')));
             </RouterLink>
         </nav>
 
-        <RouterView />
+        <RouterView v-slot="{ Component }">
+            <Transition name="page" mode="out-in">
+                <component :is="Component" />
+            </Transition>
+        </RouterView>
 
         <p class="muted pt-2 text-xs">
             Cet outil t’aide à suivre tes habitudes. Il ne remplace pas un avis médical : en cas de perte ou de prise de poids involontaire, de fatigue

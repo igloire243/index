@@ -38,7 +38,7 @@ async function adopt(p) {
     <div class="space-y-3">
         <p class="muted">Choisis un programme : ses habitudes sont ajoutées à ton planning, et tu peux ensuite les modifier librement.</p>
 
-        <article v-for="p in health.programs" :key="p.key" class="card space-y-2">
+        <article v-for="(p, i) in health.programs" :key="p.key" class="card rise space-y-2" :style="{ '--i': i }">
             <div class="flex items-start justify-between gap-2">
                 <h2 class="font-semibold">{{ p.name }}</h2>
                 <span class="tag shrink-0">{{ GOALS[p.goal] }}</span>

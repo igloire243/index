@@ -7,12 +7,16 @@ use App\Models\HealthGoal;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\Response;
 
 class GoalController extends Controller
 {
-    public function show(Request $request): JsonResponse
+    public function show(Request $request): Response
     {
-        return response()->json($request->user()->healthGoal()->first());
+        $goal = $request->user()->healthGoal()->first();
+
+        // Sans objectif : un vrai `null` JSON (response()->json(null) renverrait `{}`, un objet vide pris pour un objectif).
+        return $goal ? response()->json($goal) : response('null', 200, ['Content-Type' => 'application/json']);
     }
 
     public function update(Request $request): JsonResponse

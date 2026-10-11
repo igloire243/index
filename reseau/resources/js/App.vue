@@ -34,7 +34,7 @@ watch(
 <template>
     <template v-if="session.user">
         <header
-            class="sticky top-0 z-20 border-b border-slate-200 bg-slate-50/90 pt-[env(safe-area-inset-top)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/90"
+            class="sticky top-0 z-20 border-b border-slate-200 bg-slate-50 pt-[env(safe-area-inset-top)] dark:border-slate-800 dark:bg-slate-950"
         >
             <div class="mx-auto flex h-14 max-w-2xl items-center justify-between px-4">
                 <h1 class="text-lg font-semibold tracking-tight">{{ title }}</h1>
@@ -49,18 +49,24 @@ watch(
         </header>
 
         <main class="mx-auto max-w-2xl px-4 py-4">
-            <RouterView />
+            <RouterView v-slot="{ Component }">
+                <Transition name="page" mode="out-in">
+                    <component :is="Component" />
+                </Transition>
+            </RouterView>
         </main>
 
-        <button
-            v-if="route.meta.fab"
-            type="button"
-            class="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-20 grid size-14 place-items-center rounded-full bg-indigo-600 text-white shadow-lg active:scale-95 dark:bg-indigo-500"
-            aria-label="Ajouter un contact"
-            @click="openForm()"
-        >
-            <Icon name="plus" :size="26" />
-        </button>
+        <Transition name="pop">
+            <button
+                v-if="route.meta.fab"
+                type="button"
+                class="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-20 grid size-14 place-items-center rounded-full bg-indigo-600 text-white shadow-lg transition-transform active:scale-90 dark:bg-indigo-500"
+                aria-label="Ajouter un contact"
+                @click="openForm()"
+            >
+                <Icon name="plus" :size="26" />
+            </button>
+        </Transition>
 
         <ContactSheet />
         <ContactForm />

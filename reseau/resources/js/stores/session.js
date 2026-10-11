@@ -11,7 +11,7 @@ let toastTimer;
 export function toast(message, kind = 'info') {
     session.toast = { message, kind };
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => (session.toast = null), 3500);
+    toastTimer = setTimeout(() => (session.toast = null), kind === 'error' ? 7000 : 3500);
 }
 
 const browserTimezone = () => {

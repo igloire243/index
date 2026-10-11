@@ -33,11 +33,12 @@ const items = computed(() => {
 });
 
 async function onSort() {
-    if (sort.value === 'distance' && !contacts.pos && !(await locate())) toast('Autorise la localisation pour trier par distance.', 'error');
+    if (sort.value === 'distance' && !contacts.pos && !(await locate())) toast(contacts.posError, 'error');
 }
 
 async function onLocate() {
-    toast((await locate()) ? 'Position mise à jour.' : 'Position indisponible.');
+    if (await locate()) toast('Position mise à jour.');
+    else toast(contacts.posError, 'error');
 }
 
 function toggleDomain(key) {
@@ -82,7 +83,7 @@ function toggleDomain(key) {
         </div>
 
         <ul class="space-y-2">
-            <li v-for="c in items" :key="c.id"><ContactRow :contact="c" /></li>
+            <li v-for="(c, i) in items" :key="c.id" class="rise" :style="{ '--i': Math.min(i, 12) }"><ContactRow :contact="c" /></li>
         </ul>
 
         <div v-if="!items.length && contacts.loaded" class="py-10 text-center text-slate-500">

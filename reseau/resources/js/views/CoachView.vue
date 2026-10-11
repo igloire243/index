@@ -64,7 +64,7 @@ async function done(s) {
         <h2 class="text-base font-semibold">À faire aujourd’hui</h2>
         <p v-if="contacts.loaded && !all.length" class="muted">Rien d’urgent. Ton réseau est bien entretenu, beau travail.</p>
 
-        <article v-for="s in shown" :key="s.id" class="card space-y-1.5">
+        <article v-for="(s, i) in shown" :key="s.id" class="card rise space-y-1.5" :style="{ '--i': Math.min(i, 8) }">
             <span
                 class="tag"
                 :class="{

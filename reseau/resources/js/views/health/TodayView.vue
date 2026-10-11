@@ -1,21 +1,36 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
+import AnimatedNumber from '../../components/AnimatedNumber.vue';
 import Icon from '../../components/Icon.vue';
+import MeasurementForm from '../../components/MeasurementForm.vue';
+import { confetti } from '../../lib/confetti';
 import { addDays, fmtLong, isoDate } from '../../lib/dates';
 import { CATEGORIES, DAY_PARTS, SLOTS, dayPart, dayProgress, dueHabits, logKey, streak } from '../../lib/health';
-import { health, loadMeals, saveMeasurement, setMealDone, toggleHabit } from '../../stores/health';
+import { health, loadMeals, setMealDone, toggleHabit } from '../../stores/health';
 import { toast } from '../../stores/session';
 
 const today = isoDate();
 const date = ref(today);
 const isFuture = computed(() => date.value > today);
+const measureOpen = ref(false);
 
 const due = computed(() => dueHabits(health.habits, date.value));
 const progress = computed(() => dayProgress(health.habits, health.logs, date.value));
-const groups = computed(() => DAY_PARTS.map((part) => ({ part, habits: due.value.filter((h) => dayPart(h) === part) })).filter((g) => g.habits.length));
+const pct = computed(() => (progress.value.due ? (progress.value.done / progress.value.due) * 100 : 0));
+const groups = computed(() => {
+    let offset = 0;
+    return DAY_PARTS.map((part) => ({ part, habits: due.value.filter((h) => dayPart(h) === part) }))
+        .filter((g) => g.habits.length)
+        .map((g) => {
+            const group = { ...g, offset };
+            offset += g.habits.length;
+            return group;
+        });
+});
 const meals = computed(() => health.meals.filter((m) => m.date === date.value));
 const remindersOff = computed(() => health.habits.some((h) => h.reminder) && 'Notification' in window && Notification.permission === 'default');
+const existing = computed(() => health.measurements.find((m) => m.date === date.value));
 
 const isDone = (h) => health.logs.has(logKey(h.id, date.value));
 
@@ -42,39 +57,26 @@ watch(
     { immediate: true },
 );
 
-/* État du jour : poids, sommeil, énergie, humeur. */
-const form = reactive({ weight_kg: '', sleep_hours: '', energy: null, mood: null });
-const saving = ref(false);
-const existing = computed(() => health.measurements.find((m) => m.date === date.value));
+// Journée complétée : confettis (seulement quand c'est l'action qui vient de la terminer).
 watch(
-    [existing, date, () => health.loaded],
-    () => {
-        const m = existing.value;
-        form.weight_kg = m?.weight_kg ?? '';
-        form.sleep_hours = m?.sleep_hours ?? '';
-        form.energy = m?.energy ?? null;
-        form.mood = m?.mood ?? null;
+    () => [date.value, progress.value.done],
+    ([d, done], [oldDate, oldDone]) => {
+        if (d === oldDate && done > oldDone && done === progress.value.due && done > 0 && d === today) {
+            confetti();
+            toast('Journée complète, bravo !');
+        }
     },
-    { immediate: true },
 );
 
-async function saveState() {
-    const data = {
-        weight_kg: form.weight_kg === '' ? null : Number(form.weight_kg),
-        sleep_hours: form.sleep_hours === '' ? null : Number(form.sleep_hours),
-        energy: form.energy,
-        mood: form.mood,
-    };
-    saving.value = true;
-    try {
-        await saveMeasurement(date.value, { ...data, waist_cm: existing.value?.waist_cm ?? null, notes: existing.value?.notes ?? null });
-        toast('État enregistré.');
-    } catch (e) {
-        toast(e.message, 'error');
-    } finally {
-        saving.value = false;
-    }
-}
+const tiles = computed(() => {
+    const m = existing.value;
+    return [
+        { label: 'Poids', value: m?.weight_kg != null ? `${m.weight_kg.toLocaleString('fr-FR')} kg` : '–' },
+        { label: 'Sommeil', value: m?.sleep_hours != null ? `${m.sleep_hours.toLocaleString('fr-FR')} h` : '–' },
+        { label: 'Énergie', value: m?.energy != null ? `${m.energy}/5` : '–' },
+        { label: 'Humeur', value: m?.mood != null ? `${m.mood}/5` : '–' },
+    ];
+});
 </script>
 
 <template>
@@ -88,19 +90,21 @@ async function saveState() {
             <button type="button" class="btn size-11 !p-0" aria-label="Jour suivant" @click="date = addDays(date, 1)"><Icon name="right" /></button>
         </div>
 
-        <RouterLink v-if="remindersOff" to="/reglages" class="card flex items-center gap-3 text-sm">
+        <RouterLink v-if="remindersOff" to="/reglages" class="card rise flex items-center gap-3 text-sm">
             <Icon name="bell" /> Active les rappels pour ne rien oublier.
         </RouterLink>
 
         <section class="card space-y-2" aria-label="Progression du jour">
             <div class="flex items-baseline justify-between">
                 <h2 class="font-semibold">Ma journée</h2>
-                <span class="muted">{{ progress.done }} / {{ progress.due }} fait{{ progress.done > 1 ? 's' : '' }}</span>
+                <span class="muted"><AnimatedNumber :value="progress.done" /> / {{ progress.due }} fait{{ progress.done > 1 ? 's' : '' }}</span>
             </div>
-            <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="progress.due ? Math.round((progress.done / progress.due) * 100) : 0">
-                <div class="h-full rounded-full bg-emerald-500 transition-all" :style="{ width: (progress.due ? (progress.done / progress.due) * 100 : 0) + '%' }" />
+            <div class="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800" role="progressbar" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="Math.round(pct)">
+                <div class="h-full rounded-full bg-emerald-500 transition-[width] duration-500 ease-out" :style="{ width: pct + '%' }" />
             </div>
-            <p v-if="progress.due && progress.done === progress.due" class="text-sm text-emerald-700 dark:text-emerald-400">Journée complète, bravo !</p>
+            <Transition name="fade">
+                <p v-if="progress.due && progress.done === progress.due" class="text-sm text-emerald-700 dark:text-emerald-400">Journée complète, bravo !</p>
+            </Transition>
         </section>
 
         <section v-if="!health.habits.length && health.loaded" class="card text-center">
@@ -109,26 +113,26 @@ async function saveState() {
         </section>
         <p v-else-if="health.loaded && !due.length" class="muted text-center">Rien de prévu ce jour-là.</p>
 
-        <section v-for="g in groups" :key="g.part" :aria-label="g.part">
+        <section v-for="g in groups" :key="g.part + date" :aria-label="g.part">
             <h3 class="muted mb-2 font-semibold tracking-wide uppercase">{{ g.part }}</h3>
             <ul class="space-y-2">
-                <li v-for="h in g.habits" :key="h.id">
+                <li v-for="(h, hi) in g.habits" :key="h.id" class="rise" :style="{ '--i': g.offset + hi }">
                     <button
                         type="button"
-                        class="flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition active:scale-[.99]"
+                        class="flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors duration-300 active:scale-[.99]"
                         :class="isDone(h) ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'"
                         :aria-pressed="isDone(h)"
                         :disabled="isFuture"
                         @click="toggle(h)"
                     >
                         <span
-                            class="grid size-8 shrink-0 place-items-center rounded-full border-2"
+                            class="grid size-8 shrink-0 place-items-center rounded-full border-2 transition-colors duration-300"
                             :class="isDone(h) ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'"
                         >
-                            <Icon v-if="isDone(h)" name="check" :size="18" />
+                            <Transition name="pop"><Icon v-if="isDone(h)" name="check" :size="18" /></Transition>
                         </span>
                         <span class="min-w-0 flex-1">
-                            <span class="block font-medium" :class="{ 'line-through opacity-60': isDone(h) }">{{ h.name }}</span>
+                            <span class="block font-medium transition-opacity" :class="{ 'line-through opacity-60': isDone(h) }">{{ h.name }}</span>
                             <span class="muted block">
                                 {{ CATEGORIES[h.category] }}<template v-if="h.time"> · {{ h.time }}</template><template v-if="h.reminder"> · rappel</template>
                             </span>
@@ -143,18 +147,18 @@ async function saveState() {
 
         <section v-if="meals.length" aria-label="Repas du jour">
             <h3 class="muted mb-2 font-semibold tracking-wide uppercase">Repas prévus</h3>
-            <ul class="space-y-2">
+            <TransitionGroup name="list" tag="ul" class="space-y-2">
                 <li v-for="m in meals" :key="m.id">
                     <button
                         type="button"
-                        class="flex w-full items-center gap-3 rounded-2xl border p-3 text-left"
+                        class="flex w-full items-center gap-3 rounded-2xl border p-3 text-left transition-colors duration-300"
                         :class="m.done_at ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-900 dark:bg-emerald-950/40' : 'border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900'"
                         :aria-pressed="!!m.done_at"
                         :disabled="isFuture"
                         @click="toggleMeal(m)"
                     >
-                        <span class="grid size-8 shrink-0 place-items-center rounded-full border-2" :class="m.done_at ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'">
-                            <Icon v-if="m.done_at" name="check" :size="18" />
+                        <span class="grid size-8 shrink-0 place-items-center rounded-full border-2 transition-colors duration-300" :class="m.done_at ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300 dark:border-slate-600'">
+                            <Transition name="pop"><Icon v-if="m.done_at" name="check" :size="18" /></Transition>
                         </span>
                         <span class="min-w-0 flex-1">
                             <span class="block font-medium" :class="{ 'line-through opacity-60': m.done_at }">{{ m.description }}</span>
@@ -162,40 +166,23 @@ async function saveState() {
                         </span>
                     </button>
                 </li>
-            </ul>
+            </TransitionGroup>
         </section>
         <RouterLink v-else to="/sante/repas" class="muted block text-center underline">Planifier mes repas</RouterLink>
 
         <section class="card space-y-3" aria-label="Mon état du jour">
-            <h2 class="font-semibold">Mon état</h2>
-            <div class="grid grid-cols-2 gap-3">
-                <div>
-                    <label class="label" for="w">Poids (kg)</label>
-                    <input id="w" v-model="form.weight_kg" class="input" type="number" inputmode="decimal" step="0.1" min="20" max="400" />
-                </div>
-                <div>
-                    <label class="label" for="s">Sommeil (h)</label>
-                    <input id="s" v-model="form.sleep_hours" class="input" type="number" inputmode="decimal" step="0.5" min="0" max="24" />
-                </div>
+            <div class="flex items-center justify-between">
+                <h2 class="font-semibold">Mon état</h2>
+                <button type="button" class="btn btn-primary btn-sm" @click="measureOpen = true">{{ existing ? 'Modifier' : 'Renseigner' }}</button>
             </div>
-            <fieldset v-for="f in [{ key: 'energy', label: 'Énergie' }, { key: 'mood', label: 'Humeur' }]" :key="f.key">
-                <legend class="label">{{ f.label }}</legend>
-                <div class="flex gap-2" role="radiogroup" :aria-label="f.label">
-                    <button
-                        v-for="n in 5"
-                        :key="n"
-                        type="button"
-                        role="radio"
-                        :aria-checked="form[f.key] === n"
-                        class="btn flex-1 !px-0"
-                        :class="{ 'btn-primary': form[f.key] === n }"
-                        @click="form[f.key] = form[f.key] === n ? null : n"
-                    >
-                        {{ n }}
-                    </button>
+            <dl class="grid grid-cols-4 gap-2 text-center">
+                <div v-for="t in tiles" :key="t.label" class="rounded-xl bg-slate-50 p-2 dark:bg-slate-800">
+                    <dt class="muted text-xs">{{ t.label }}</dt>
+                    <dd class="text-sm font-semibold">{{ t.value }}</dd>
                 </div>
-            </fieldset>
-            <button type="button" class="btn btn-primary w-full" :disabled="saving" @click="saveState">Enregistrer</button>
+            </dl>
         </section>
+
+        <MeasurementForm v-model="measureOpen" :date="date" />
     </div>
 </template>
