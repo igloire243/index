@@ -26,6 +26,7 @@ CRON, chaque minute : php /home/reseau-app/cron.php  →  deploiement:finaliser
 | `reseau/config/deploiement.php` | chemins du dépôt de passage et de l'application |
 | `reseau/docs/deploiement/lws/reseau/index.php`, `htaccess.txt` | partie publique propre à LWS |
 | `reseau/docs/deploiement/lws/env-serveur.exemple` | modèle du `.env` du serveur |
+| `reseau/docs/deploiement/lws/cron-dispatcher.php` | si le compte n'a droit qu'à UNE tâche CRON (§ ci-dessous) |
 
 ## À faire une seule fois
 
@@ -68,6 +69,27 @@ Sur ton poste : `cp reseau/docs/deploiement/lws/env-serveur.exemple .env`, puis 
 5. Ouvre `https://reseau.mark-cd.com` et connecte-toi.
 
 Si LWS ne propose pas d'intervalle d'une minute, la finalisation prendra l'intervalle choisi, et les rappels seront moins précis.
+
+### Le compte n'autorise qu'UNE seule tâche CRON
+
+Certains forfaits LWS limitent le compte à une tâche planifiée, déjà prise par une autre application (par exemple
+`php /home/mgj-app/cron.php`). Impossible d'en ajouter une deuxième : il faut que la tâche unique serve les deux
+applications. `cron-dispatcher.php` fait exactement ça : déposé une seule fois à côté des dossiers `*-app` (jamais
+dedans), il appelle le `cron.php` de chaque application l'un après l'autre, chacun dans son propre processus. Ajouter
+une application plus tard ne demande rien de plus ici : dès que son `cron.php` existe à côté, il est pris en compte.
+
+1. Panneau LWS → gestionnaire de fichiers → à la racine (à côté de `home/reseau-app`, PAS dedans) : **+ Fichier**,
+   nomme-le `cron-dispatcher.php`, puis **Modifier** et colle le contenu de `reseau/docs/deploiement/lws/cron-dispatcher.php`.
+2. Étape 3 ci-dessus (amorçage) : comme la tâche CRON existante ne peut pas être modifiée (seulement mise en pause ou
+   supprimée), **supprime-la temporairement**, note sa commande pour la recréer ensuite, et crée à sa place une tâche
+   sur `php /home/htdocs/home/reseau-app/amorcage.php`. Laisse-la tourner une fois (le temps qu'il faut), puis
+   supprime-la.
+3. Recrée la tâche CRON, avec les mêmes réglages qu'avant (même fréquence), mais pointée cette fois sur
+   `php /home/cron-dispatcher.php`. L'autre application est de nouveau planifiée automatiquement dès ce passage-là,
+   via son propre `cron.php` que le répartiteur appelle à sa place.
+
+Le temps entre la suppression de la tâche d'origine et la recréation du répartiteur, les tâches planifiées de l'autre
+application (ses propres rappels, par exemple) sont en pause.
 
 ## Déployer ensuite
 1. Fusionne ce que tu veux publier dans la branche `main` (le workflow n'apparaît dans l'onglet Actions que depuis la branche par défaut).
