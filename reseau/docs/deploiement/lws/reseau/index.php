@@ -13,14 +13,10 @@ define('LARAVEL_START', microtime(true));
  * HORS du web, dans `home/reseau-app` : un `.env` posé sous `htdocs` serait téléchargeable par n'importe qui.
  *
  * Arborescence attendue (c'est celle du panneau LWS) :
- *     <racine du compte>/reseau-app/                   le code de l'application (vu du CRON : /home/reseau-app)
+ *     <racine du compte>/home/reseau-app/              le code de l'application
  *     <racine du compte>/htdocs/reseau.mark-cd.com/    ce dossier (public)
- * Par prudence on accepte aussi <racine du compte>/home/reseau-app (selon la façon dont le compte est présenté).
  */
-$application = __DIR__.'/../../reseau-app';
-if (! is_file($application.'/vendor/autoload.php') && is_file(__DIR__.'/../../home/reseau-app/vendor/autoload.php')) {
-    $application = __DIR__.'/../../home/reseau-app';
-}
+$application = __DIR__.'/../../home/reseau-app';
 
 // Mode maintenance
 if (file_exists($maintenance = $application.'/storage/framework/maintenance.php')) {
