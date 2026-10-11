@@ -57,6 +57,11 @@ class User extends Authenticatable
         return $this->hasOne(HealthGoal::class);
     }
 
+    public function passkeys(): HasMany
+    {
+        return $this->hasMany(Passkey::class);
+    }
+
     public function pushSubscriptions(): HasMany
     {
         return $this->hasMany(PushSubscription::class);

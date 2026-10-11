@@ -22,6 +22,27 @@ php artisan reseau:user toi@exemple.com   # crée ton compte (mot de passe deman
 php artisan serve                  # http://127.0.0.1:8000
 ```
 
+### Mettre à jour une installation existante
+
+```sh
+git pull origin claude/kind-galileo-c0rsyi
+composer install
+npm install
+php artisan migrate        # applique les nouvelles tables (ex. clés d'accès)
+npm run build
+php artisan serve
+```
+
+### Face ID / empreinte (clés d'accès)
+
+Après une première connexion avec ton mot de passe : *Réglages → Face ID / empreinte → Ajouter cet appareil*. Ensuite l'écran de connexion de cet appareil propose un bouton « Face ID / empreinte », sans mot de passe. C'est le **téléphone** qui vérifie ton visage ou ton empreinte (standard WebAuthn) : l'application ne reçoit et ne stocke aucune donnée biométrique, seulement une clé publique, et une photo ne suffit pas à tromper le système.
+
+- Il faut **HTTPS et un nom de domaine** (pas une adresse IP). En local sur l'ordinateur, utilise `http://localhost:8000` (et non `127.0.0.1`). Pour un téléphone, il faut un tunnel HTTPS ou le déploiement.
+- Derrière un tunnel ou un domaine particulier, renseigne dans `.env` : `APP_URL=https://ton-domaine`, `WEBAUTHN_RP_ID=ton-domaine` et, si le serveur est derrière un proxy, `TRUSTED_PROXIES=*`.
+- Une clé d'accès est liée au domaine : si le domaine change (nouveau tunnel), il faut réenregistrer l'appareil.
+- Le bouton n'apparaît que sur les appareils déjà enregistrés. Il n'existe aucun moyen de contourner le mot de passe : sans clé enregistrée sur l'appareil, rien ne permet d'entrer.
+- Les tentatives sont limitées (10 échecs par 15 minutes), chaque réponse est vérifiée (signature, origine, défi à usage unique, compteur anti-clonage, vérification de la personne obligatoire).
+
 ### Voir l'application avec des données de démonstration
 
 ```sh
@@ -32,7 +53,7 @@ Crée (ou recrée) le compte `demo@reseau.test` / `demo-password-123` avec 32 co
 
 Il n'y a **pas d'inscription publique** : les comptes se créent uniquement avec `reseau:user`. Pour changer un mot de passe, relance la même commande avec la même adresse.
 
-Tests : `composer test` (PHPUnit, 43 tests) et `npm test` (Vitest, 49 tests : coach, santé, dates, géolocalisation).
+Tests : `composer test` (PHPUnit, 58 tests) et `npm test` (Vitest, 53 tests : coach, santé, dates, géolocalisation, clés d'accès).
 
 ## Mise en ligne
 

@@ -15,6 +15,17 @@
         touch-action: pan-x pan-y;
         overscroll-behavior: none;
     }
+    /* Barres de défilement masquées partout (page, fenêtres, listes horizontales) : le défilement reste actif au doigt,
+       à la molette et au clavier. */
+    * {
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    *::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
+    }
     * {
         /* Un double tap sur un bouton ou un texte ne doit rien sélectionner ni afficher de menu. */
         -webkit-touch-callout: none;

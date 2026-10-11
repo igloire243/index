@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\GoalController;
 use App\Http\Controllers\Api\HabitController;
 use App\Http\Controllers\Api\MealController;
 use App\Http\Controllers\Api\MeasurementController;
+use App\Http\Controllers\Api\PasskeyController;
 use App\Http\Controllers\Api\ProgramController;
 use App\Http\Controllers\Api\PushController;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,8 @@ $date = '\d{4}-\d{2}-\d{2}';
 
 Route::prefix('api')->group(function () use ($date) {
     Route::post('login', [AuthController::class, 'login']);
+    Route::post('passkey-login/options', [PasskeyController::class, 'loginOptions']);
+    Route::post('passkey-login', [PasskeyController::class, 'login']);
 
     Route::middleware('auth')->group(function () use ($date) {
         Route::post('logout', [AuthController::class, 'logout']);
@@ -49,6 +52,11 @@ Route::prefix('api')->group(function () use ($date) {
 
         Route::get('programs', [ProgramController::class, 'index']);
         Route::post('programs/{key}/adopt', [ProgramController::class, 'adopt'])->where('key', '[a-z0-9-]+');
+
+        Route::get('passkeys', [PasskeyController::class, 'index']);
+        Route::post('passkeys/options', [PasskeyController::class, 'registerOptions']);
+        Route::post('passkeys', [PasskeyController::class, 'register']);
+        Route::delete('passkeys/{id}', [PasskeyController::class, 'destroy'])->whereNumber('id');
 
         Route::get('push/key', [PushController::class, 'key']);
         Route::post('push/subscribe', [PushController::class, 'subscribe']);

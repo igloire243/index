@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import Icon from '../components/Icon.vue';
+import PasskeysCard from '../components/PasskeysCard.vue';
 import { parseVcf } from '../lib/contacts';
 import { isoDate } from '../lib/dates';
 import { currentSubscription, disablePush, enablePush, pushSupported, sendTestPush } from '../lib/push';
@@ -112,6 +113,8 @@ async function wipe() {
             </p>
             <button type="button" class="btn w-full" @click="signOut"><Icon name="logout" :size="18" /> Se déconnecter</button>
         </section>
+
+        <PasskeysCard />
 
         <section class="card space-y-3">
             <h2 class="font-semibold">Rappels</h2>

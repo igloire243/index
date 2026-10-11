@@ -1,5 +1,6 @@
 import { reactive } from 'vue';
 import { api, hooks } from '../api';
+import { loginWithPasskey } from '../lib/passkeys';
 
 export const session = reactive({
     user: null,
@@ -47,6 +48,11 @@ export async function loadSession() {
 
 export async function login(email, password) {
     session.user = await api('login', { method: 'POST', body: { email, password } });
+    await syncTimezone();
+}
+
+export async function loginWithFace() {
+    session.user = await loginWithPasskey();
     await syncTimezone();
 }
 

@@ -1,8 +1,10 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import Icon from '../components/Icon.vue';
 import Wizard from '../components/Wizard.vue';
-import { login } from '../stores/session';
+import { describePasskeyError, hasLocalPasskey, passkeysSupported } from '../lib/passkeys';
+import { login, loginWithFace } from '../stores/session';
 
 const route = useRoute();
 const router = useRouter();
@@ -11,19 +13,38 @@ const password = ref('');
 const error = ref('');
 const errorKey = ref(0);
 const busy = ref(false);
+const faceAvailable = passkeysSupported() && hasLocalPasskey();
 
 const steps = computed(() => [
     { key: 'email', title: 'Adresse e-mail', valid: /^\S+@\S+\.\S+$/.test(email.value.trim()), hint: 'Saisis une adresse e-mail valide pour continuer.' },
     { key: 'password', title: 'Mot de passe', valid: password.value.length > 0 },
 ]);
 
+function goAfterLogin() {
+    const target = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/contacts';
+    router.replace(target);
+}
+
+async function faceLogin() {
+    error.value = '';
+    busy.value = true;
+    try {
+        await loginWithFace();
+        goAfterLogin();
+    } catch (e) {
+        error.value = describePasskeyError(e);
+        errorKey.value++;
+    } finally {
+        busy.value = false;
+    }
+}
+
 async function submit() {
     error.value = '';
     busy.value = true;
     try {
         await login(email.value.trim(), password.value);
-        const target = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/contacts';
-        router.replace(target);
+        goAfterLogin();
     } catch (e) {
         error.value = e.message;
         errorKey.value++; // relance l'animation de secousse
@@ -57,6 +78,11 @@ async function submit() {
                     </div>
                 </template>
             </Wizard>
+        </div>
+
+        <div v-if="faceAvailable" class="rise mt-4" style="--i: 4">
+            <button type="button" class="btn w-full" :disabled="busy" @click="faceLogin"><Icon name="face" :size="20" /> Face ID / empreinte</button>
+            <p v-if="error && !email" :key="errorKey" class="shake mt-3 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-700 dark:bg-red-950 dark:text-red-300" role="alert">{{ error }}</p>
         </div>
     </main>
 </template>
