@@ -49,6 +49,7 @@ export const router = createRouter({
             meta: { title: 'Coffre' },
             children: [
                 { path: '', name: 'coffre', component: () => import('./views/vault/DossiersView.vue') },
+                { path: 'mots-de-passe', name: 'coffre-secrets', component: () => import('./views/vault/SecretsView.vue') },
                 { path: ':id(\\d+)', name: 'coffre-dossier', component: () => import('./views/vault/DossierView.vue') },
             ],
         },

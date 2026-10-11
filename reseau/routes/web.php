@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\PasskeyController;
 use App\Http\Controllers\Api\ProgramController;
 use App\Http\Controllers\Api\PushController;
+use App\Http\Controllers\Api\SecretController;
 use App\Http\Controllers\Api\VaultController;
 use Illuminate\Support\Facades\Route;
 
@@ -96,6 +97,12 @@ Route::prefix('api')->group(function () use ($date) {
 
         // Tout ce qui touche aux dossiers exige que le coffre soit déverrouillé.
         Route::middleware('vault')->group(function () {
+            Route::get('secrets', [SecretController::class, 'index']);
+            Route::post('secrets', [SecretController::class, 'store']);
+            Route::get('secrets/{id}', [SecretController::class, 'show'])->whereNumber('id');
+            Route::put('secrets/{id}', [SecretController::class, 'update'])->whereNumber('id');
+            Route::delete('secrets/{id}', [SecretController::class, 'destroy'])->whereNumber('id');
+
             Route::get('dossiers', [DossierController::class, 'index']);
             Route::post('dossiers', [DossierController::class, 'store']);
             Route::get('dossiers/{id}', [DossierController::class, 'show'])->whereNumber('id');

@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted, ref } from 'vue';
-import { RouterView } from 'vue-router';
+import { RouterLink, RouterView, useRoute } from 'vue-router';
 import EmptyState from '../../components/EmptyState.vue';
 import Icon from '../../components/Icon.vue';
 import Meter from '../../components/Meter.vue';
@@ -9,6 +9,7 @@ import { loadContacts } from '../../stores/contacts';
 import { toast } from '../../stores/session';
 import { loadVaultStatus, lockVault, unlockVault, vault } from '../../stores/vault';
 
+const route = useRoute();
 const password = ref('');
 const busy = ref(false);
 const error = ref('');
@@ -39,7 +40,7 @@ async function unlock() {
 
     <div v-else-if="!vault.unlocked" class="space-y-4">
         <EmptyState illustration="vault" title="Coffre verrouillé">
-            <p>Tes dossiers confidentiels sont chiffrés sur le serveur. Confirme ton mot de passe pour les ouvrir.</p>
+            <p>Tes dossiers et tes mots de passe sont chiffrés sur le serveur. Confirme ton mot de passe pour les ouvrir.</p>
         </EmptyState>
         <form class="card mx-auto max-w-sm space-y-3" @submit.prevent="unlock">
             <div>
@@ -64,6 +65,11 @@ async function unlock() {
                 </button>
             </div>
         </div>
+
+        <nav v-if="route.name === 'coffre' || route.name === 'coffre-secrets'" class="flex gap-2" aria-label="Sections du coffre">
+            <RouterLink to="/coffre" class="chip" :class="{ 'chip-on': route.name === 'coffre' }" :aria-current="route.name === 'coffre' ? 'page' : undefined">Dossiers</RouterLink>
+            <RouterLink to="/coffre/mots-de-passe" class="chip" :class="{ 'chip-on': route.name === 'coffre-secrets' }" :aria-current="route.name === 'coffre-secrets' ? 'page' : undefined">Mots de passe</RouterLink>
+        </nav>
 
         <RouterView v-slot="{ Component }">
             <Transition name="page" mode="out-in">
