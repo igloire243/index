@@ -61,9 +61,13 @@ Sur ton poste : `cp reseau/docs/deploiement/lws/env-serveur.exemple .env`, puis 
 ### 3. Premier déploiement (amorçage)
 1. GitHub → Actions → **Déployer sur LWS** → *Run workflow* (premier envoi long : `vendor/` fait des milliers de fichiers).
 2. Dépose ton `.env` par FTP dans `htdocs/home/reseau-app/` (à côté de `VERSION`).
-3. Panneau LWS → **Tâches CRON** : crée une tâche, à lancer une fois, sur `php /home/htdocs/home/reseau-app/amorcage.php`.
-   Il recopie le code vers `/home/reseau-app`, **supprime le `.env` du dépôt** (il est sous `htdocs`), crée la base SQLite, migre,
-   crée ton utilisateur et retire les lignes `AMORCAGE_*`. Lis sa sortie si LWS l'affiche ; sinon vérifie que le site répond.
+3. Panneau LWS → **Tâches CRON** : crée une tâche, à lancer une fois, sur
+   `php /home/htdocs/home/reseau-app/amorcage.php /home/reseau-app` (le second chemin, c'est ta destination réelle —
+   indispensable : sur certains comptes, remonter depuis l'emplacement du script ne permet pas de la retrouver tout
+   seul, le dépôt et la destination n'ayant pas de dossier ancêtre commun). Il recopie le code vers `/home/reseau-app`,
+   **supprime le `.env` du dépôt** (il est sous `htdocs`), crée la base SQLite, migre, crée ton utilisateur et retire
+   les lignes `AMORCAGE_*`. Il écrit chaque étape dans `amorcage.log`, à côté du script (le panneau CRON ne montre
+   pas toujours la sortie d'une tâche) : lis-le pour vérifier, ou si quelque chose ne marche pas.
 4. Crée la tâche **de chaque minute** : `php /home/reseau-app/cron.php`. Elle finalise tous les déploiements suivants, et
    fait aussi tourner les rappels de santé et le nettoyage du Coffre.
 5. Ouvre `https://reseau.mark-cd.com` et connecte-toi.
@@ -79,11 +83,13 @@ dedans), il appelle le `cron.php` de chaque application l'un après l'autre, cha
 une application plus tard ne demande rien de plus ici : dès que son `cron.php` existe à côté, il est pris en compte.
 
 1. Panneau LWS → gestionnaire de fichiers → à la racine (à côté de `home/reseau-app`, PAS dedans) : **+ Fichier**,
-   nomme-le `cron-dispatcher.php`, puis **Modifier** et colle le contenu de `reseau/docs/deploiement/lws/cron-dispatcher.php`.
+   nomme-le `cron-dispatcher.php`. Pour y mettre le contenu de `reseau/docs/deploiement/lws/cron-dispatcher.php`,
+   préfère **Charger** (envoi du fichier tel quel) à **Modifier** (coller du texte dans l'éditeur du panneau a déjà
+   tronqué un fichier en plein milieu, silencieusement, sans qu'aucune erreur ne le signale).
 2. Étape 3 ci-dessus (amorçage) : comme la tâche CRON existante ne peut pas être modifiée (seulement mise en pause ou
    supprimée), **supprime-la temporairement**, note sa commande pour la recréer ensuite, et crée à sa place une tâche
-   sur `php /home/htdocs/home/reseau-app/amorcage.php`. Laisse-la tourner une fois (le temps qu'il faut), puis
-   supprime-la.
+   sur `php /home/htdocs/home/reseau-app/amorcage.php /home/reseau-app`. Laisse-la tourner une fois (le temps qu'il
+   faut), vérifie `amorcage.log`, puis supprime-la.
 3. Recrée la tâche CRON, avec les mêmes réglages qu'avant (même fréquence), mais pointée cette fois sur
    `php /home/cron-dispatcher.php`. L'autre application est de nouveau planifiée automatiquement dès ce passage-là,
    via son propre `cron.php` que le répartiteur appelle à sa place.
@@ -115,6 +121,8 @@ déploiement (qui vide le cache), ou après `php artisan optimize:clear`.
 | 500 partout sauf `/` | `.htaccess` | remplacer son contenu par `FallbackResource /index.php` |
 | 500 sur toutes les pages | `.env` absent / `APP_KEY` vide, droits d'écriture | `storage/`, `bootstrap/cache/`, `database/` en 775 |
 | Erreur « could not find driver » | extension `pdo_sqlite` absente de la version PHP du CRON ou du site | choisir une version PHP ≥ 8.3 avec SQLite dans le panneau LWS |
+| `amorcage.log` absent, même « Copie échouée : impossible de créer » avec un chemin visiblement tronqué (ex. `//reseau-app`) | lancée sans l'argument de destination | relance avec `php amorcage.php /home/reseau-app` (chemin réel) |
+| Fichier plus petit qu'attendu après « Modifier » dans le panneau LWS | le collage de texte a tronqué le fichier en plein milieu, sans erreur visible | utilise **Charger** (envoi du fichier) plutôt que coller du texte, surtout pour un fichier de plus de quelques lignes |
 | `sodium` / `fileinfo` manquant | extension désactivée | l'activer dans le panneau LWS (le Coffre en a besoin) |
 | La migration ne se fait pas | `migrer=0`, ou une migration échoue en boucle | lire la sortie du CRON ; la version n'est marquée traitée qu'après succès |
 | Géolocalisation, micro, Face ID refusés | site en HTTP | activer le SSL du sous-domaine |
