@@ -1,0 +1,106 @@
+# Déploiement sur LWS par FTP, à la demande uniquement (onglet « Actions » → « Déployer sur LWS » → « Run workflow »).
+# Jamais sur un simple push : chaque déploiement est un geste que vous validez.
+#
+# On compile ici (composer --no-dev, npm run build), on sépare le code (htdocs/home/reseau-app, « dépôt de passage »)
+# de la partie publique (htdocs/<sous-domaine>), puis on envoie par FTP seulement ce qui a changé. Sans SSH, la
+# recopie vers l'application réelle, la migration et le vidage des caches sont faits par le CRON du serveur
+# (php artisan deploiement:finaliser, lancé chaque minute par cron.php).
+# Mode d'emploi complet : reseau/docs/deploiement/lws/LISEZ-MOI.md
+name: Déployer sur LWS
+
+on:
+  workflow_dispatch:
+    inputs:
+      migrer:
+        description: 'Lancer les migrations de la base après l’envoi'
+        type: boolean
+        default: true
+
+concurrency:
+  group: deploiement-lws
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: reseau   # l'application Laravel vit dans le dossier reseau/ du dépôt
+
+jobs:
+  deployer:
+    runs-on: ubuntu-latest
+    # L'environnement « production » peut exiger une approbation (Settings → Environments → Required reviewers).
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, openssl, sodium, fileinfo, curl, pdo_sqlite, sqlite3, bcmath, gmp
+          tools: composer:v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: reseau/package-lock.json
+
+      - name: Dépendances de production
+        run: composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+
+      - name: Écrans compilés
+        run: |
+          npm ci --ignore-scripts
+          npm run build
+
+      - name: Séparer le code et la partie publique
+        run: |
+          set -e
+          mkdir -p dist/app dist/public
+          # Le dossier public de l'hébergement reçoit son propre index.php et son .htaccess (celui de Laravel boucle
+          # sur LWS).
+          cp -a public/. dist/public/
+          cp docs/deploiement/lws/reseau/index.php dist/public/index.php
+          cp docs/deploiement/lws/htaccess.txt dist/public/.htaccess
+          rsync -a \
+            --exclude='/.git' --exclude='/.github' --exclude='/.claude' --exclude='/node_modules' \
+            --exclude='/tests' --exclude='/docs' --exclude='/public' --exclude='/storage' --exclude='/dist' \
+            --exclude='/.env' --exclude='/.env.*' --exclude='/.phpunit.result.cache' --exclude='/database/*.sqlite*' ./ dist/app/
+          mkdir -p dist/app/public
+          # Le CRON du serveur lit ce fichier : un contenu nouveau = un déploiement à finaliser (caches, migrations).
+          # Le code est déposé dans `htdocs` (le compte FTP ne voit rien au-dessus) : il y est servi par le web le
+          # temps que le CRON le recopie, donc on le ferme avec un .htaccess « Deny all ».
+          printf '<IfModule mod_authz_core.c>\n    Require all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n    Order allow,deny\n    Deny from all\n</IfModule>\n' > dist/app/.htaccess
+          echo "${GITHUB_SHA} run=${GITHUB_RUN_ID} migrer=${{ inputs.migrer && '1' || '0' }}" > dist/app/VERSION
+
+      - name: Envoyer le code (FTP)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.LWS_FTP_HOTE }}
+          username: ${{ secrets.LWS_FTP_UTILISATEUR }}
+          password: ${{ secrets.LWS_FTP_MOT_DE_PASSE }}
+          protocol: ${{ vars.LWS_FTP_PROTOCOLE || 'ftp' }}
+          local-dir: reseau/dist/app/
+          server-dir: ${{ vars.LWS_DOSSIER_APP }}/
+          # Le .env, le stockage (coffre chiffré, sessions), la base SQLite et le cache d'amorçage du serveur ne bougent jamais.
+          exclude: |
+            .env
+            storage/**
+            bootstrap/cache/**
+            database/*.sqlite*
+
+      - name: Envoyer la partie publique (FTP)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.LWS_FTP_HOTE }}
+          username: ${{ secrets.LWS_FTP_UTILISATEUR }}
+          password: ${{ secrets.LWS_FTP_MOT_DE_PASSE }}
+          protocol: ${{ vars.LWS_FTP_PROTOCOLE || 'ftp' }}
+          local-dir: reseau/dist/public/
+          server-dir: ${{ vars.LWS_DOSSIER_PUBLIC }}/
+          exclude: |
+            storage/**
+
+      # Rien à appeler : sans SSH et sans adresse web, la migration est faite par le CRON du serveur (une minute
+      # au plus après l'envoi) — voir `deploiement:finaliser`.
+      - name: Fin
+        run: echo "Fichiers envoyés. Le CRON du serveur migre et vide les caches dans la minute."

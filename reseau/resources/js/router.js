@@ -1,0 +1,66 @@
+import { createRouter, createWebHistory } from 'vue-router';
+import { session } from './stores/session';
+
+export const router = createRouter({
+    history: createWebHistory(),
+    routes: [
+        { path: '/login', name: 'login', component: () => import('./views/LoginView.vue'), meta: { title: 'Connexion' } },
+        { path: '/', redirect: '/contacts' },
+        {
+            path: '/contacts',
+            component: () => import('./views/ContactsLayout.vue'),
+            meta: { title: 'Contacts', fab: true },
+            children: [
+                { path: '', name: 'contacts', component: () => import('./views/ContactsView.vue') },
+                { path: 'carte', name: 'carte', component: () => import('./views/MapView.vue') },
+                { path: 'domaines', name: 'domaines', component: () => import('./views/DomainsView.vue') },
+            ],
+        },
+        { path: '/carte', redirect: '/contacts/carte' },
+        { path: '/domaines', redirect: '/contacts/domaines' },
+        { path: '/coach', name: 'coach', component: () => import('./views/CoachView.vue'), meta: { title: 'Coach' } },
+        {
+            path: '/sante',
+            component: () => import('./views/health/HealthLayout.vue'),
+            meta: { title: 'Santé' },
+            children: [
+                { path: '', name: 'sante', component: () => import('./views/health/TodayView.vue') },
+                { path: 'planning', name: 'sante-planning', component: () => import('./views/health/PlanningView.vue') },
+                { path: 'repas', name: 'sante-repas', component: () => import('./views/health/MealsView.vue') },
+                { path: 'suivi', name: 'sante-suivi', component: () => import('./views/health/ProgressView.vue') },
+                { path: 'programmes', name: 'sante-programmes', component: () => import('./views/health/ProgramsView.vue') },
+            ],
+        },
+        {
+            path: '/finances',
+            component: () => import('./views/finance/FinanceLayout.vue'),
+            meta: { title: 'Finances' },
+            children: [
+                { path: '', name: 'finances', component: () => import('./views/finance/OverviewView.vue') },
+                { path: 'fonds', name: 'finances-fonds', component: () => import('./views/finance/AccountsView.vue') },
+                { path: 'creances', name: 'finances-creances', component: () => import('./views/finance/DebtsView.vue'), props: { direction: 'owed_to_me' } },
+                { path: 'dettes', name: 'finances-dettes', component: () => import('./views/finance/DebtsView.vue'), props: { direction: 'i_owe' } },
+                { path: 'biens', name: 'finances-biens', component: () => import('./views/finance/AssetsView.vue') },
+            ],
+        },
+        {
+            path: '/coffre',
+            component: () => import('./views/vault/VaultLayout.vue'),
+            meta: { title: 'Coffre' },
+            children: [
+                { path: '', name: 'coffre', component: () => import('./views/vault/DossiersView.vue') },
+                { path: ':id(\\d+)', name: 'coffre-dossier', component: () => import('./views/vault/DossierView.vue') },
+            ],
+        },
+        { path: '/reglages', name: 'reglages', component: () => import('./views/SettingsView.vue'), meta: { title: 'Réglages' } },
+        { path: '/:pathMatch(.*)*', redirect: '/contacts' },
+    ],
+    scrollBehavior: () => ({ top: 0 }),
+});
+
+router.beforeEach((to) => {
+    if (!session.user && to.name !== 'login') {
+        return { name: 'login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} };
+    }
+    if (session.user && to.name === 'login') return '/contacts';
+});

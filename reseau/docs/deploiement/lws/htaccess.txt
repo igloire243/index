@@ -1,0 +1,25 @@
+# .htaccess d'HÉBERGEMENT MUTUALISÉ LWS : remplace celui de Laravel dans htdocs/<sous-domaine>/.htaccess.
+#
+# Pourquoi : avec le `.htaccess` standard de Laravel, `/` répondait mais les autres adresses donnaient la 500
+# générique de l'hébergeur : le sous-domaine est un DOSSIER de htdocs, et la réécriture « tout vers index.php »
+# sans base ni garde-fou y boucle. Ici : une base explicite, et une règle qui laisse passer index.php lui-même
+# (c'est ce qui coupe la boucle).
+# Si la 500 persiste, remplacer tout le bloc par :   FallbackResource /index.php
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # En-têtes d'authentification et de jeton CSRF transmis à PHP
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+    RewriteCond %{HTTP:x-xsrf-token} .
+    RewriteRule .* - [E=HTTP_X_XSRF_TOKEN:%{HTTP:X-XSRF-Token}]
+
+    # index.php lui-même ne se réécrit pas
+    RewriteRule ^index\.php$ - [L]
+
+    # Tout ce qui n'est ni un fichier ni un dossier va au contrôleur frontal
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L]
+</IfModule>

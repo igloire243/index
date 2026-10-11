@@ -1,0 +1,46 @@
+# .env DU SERVEUR LWS : à copier en `.env`, à remplir, puis à déposer par FTP dans htdocs/home/reseau-app/ (voir LISEZ-MOI.md).
+# Ce fichier-ci est un modèle SANS secret ; ne commite jamais le vrai .env.
+
+APP_NAME="Réseau"
+APP_ENV=production
+APP_DEBUG=false
+# Générée SUR TON POSTE : `php artisan key:generate --show`. Garde-la précieusement et NE LA CHANGE JAMAIS ensuite :
+# elle chiffre les fichiers du Coffre, qui deviendraient illisibles.
+APP_KEY=
+APP_URL=https://reseau.mark-cd.com
+APP_LOCALE=fr
+APP_FALLBACK_LOCALE=fr
+
+LOG_CHANNEL=single
+LOG_LEVEL=warning
+
+# Base SQLite : le fichier database/database.sqlite est créé par amorcage.php et n'est jamais écrasé par un déploiement.
+DB_CONNECTION=sqlite
+
+# Sessions et cache en fichiers (pas de table à interroger à chaque requête).
+SESSION_DRIVER=file
+SESSION_LIFETIME=43200
+SESSION_SECURE_COOKIE=true
+CACHE_STORE=file
+QUEUE_CONNECTION=sync
+
+# Face ID / empreinte : le nom de domaine exact du site.
+WEBAUTHN_RP_ID=reseau.mark-cd.com
+
+# Rappels par notification : `php artisan reseau:vapid` SUR TON POSTE, puis colle les deux clés ici.
+VAPID_PUBLIC_KEY=
+VAPID_PRIVATE_KEY=
+VAPID_SUBJECT=mailto:ton-adresse@example.com
+
+# Coffre : valeurs par défaut, à ajuster si besoin.
+# VAULT_MAX_FILE_MB=500
+# VAULT_QUOTA_MB=4096
+
+# Déploiement automatique : chemins vus du CRON LWS (≠ chemins vus du FTP).
+DEPLOIEMENT_DEPOT=/home/htdocs/home/reseau-app
+DEPLOIEMENT_DESTINATION=/home/reseau-app
+
+# Premier utilisateur, créé UNE fois par amorcage.php qui retire ensuite ces trois lignes (mot de passe : 10 caractères minimum).
+AMORCAGE_EMAIL=
+AMORCAGE_NOM=
+AMORCAGE_MOT_DE_PASSE=
