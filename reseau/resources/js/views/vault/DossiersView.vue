@@ -18,9 +18,11 @@ const loading = ref(true);
 const contactId = computed(() => (route.query.contact ? Number(route.query.contact) : null));
 const contact = computed(() => contacts.list.find((c) => c.id === contactId.value) ?? null);
 
+// Un dossier avec une catégorie est un document personnel : il vit dans l'onglet « Documents », pas ici.
+const plainDossiers = computed(() => vault.dossiers.filter((d) => !d.category));
 const shown = computed(() => {
     const q = norm(query.value);
-    return vault.dossiers.filter((d) => (!contactId.value || d.contact_id === contactId.value) && (!q || norm(`${d.title} ${d.subject ?? ''}`).includes(q)));
+    return plainDossiers.value.filter((d) => (!contactId.value || d.contact_id === contactId.value) && (!q || norm(`${d.title} ${d.subject ?? ''}`).includes(q)));
 });
 
 const day = (iso) => new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
@@ -51,9 +53,9 @@ watch(() => vault.unlocked, (u) => u && refresh());
             <button type="button" class="btn btn-sm" @click="router.replace('/coffre')">Voir tous</button>
         </div>
 
-        <EmptyState v-if="!loading && !shown.length" illustration="vault" :title="vault.dossiers.length ? 'Aucun résultat' : 'Aucun dossier pour l’instant'">
-            <p v-if="!vault.dossiers.length">Crée un dossier sur une personne ou un sujet, puis ajoute-y des photos, vidéos, audios et documents.</p>
-            <template v-if="!vault.dossiers.length" #actions><button type="button" class="btn btn-primary" @click="formOpen = true">Créer un dossier</button></template>
+        <EmptyState v-if="!loading && !shown.length" illustration="vault" :title="plainDossiers.length ? 'Aucun résultat' : 'Aucun dossier pour l’instant'">
+            <p v-if="!plainDossiers.length">Crée un dossier sur une personne ou un sujet, puis ajoute-y des photos, vidéos, audios et documents.</p>
+            <template v-if="!plainDossiers.length" #actions><button type="button" class="btn btn-primary" @click="formOpen = true">Créer un dossier</button></template>
         </EmptyState>
 
         <TransitionGroup name="list" tag="ul" class="relative space-y-3">

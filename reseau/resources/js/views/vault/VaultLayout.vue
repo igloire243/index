@@ -72,8 +72,9 @@ async function unlock() {
         </div>
         <ExportSheet v-model="exporting" />
 
-        <nav v-if="route.name === 'coffre' || route.name === 'coffre-secrets'" class="flex gap-2" aria-label="Sections du coffre">
+        <nav v-if="['coffre', 'coffre-documents', 'coffre-secrets'].includes(route.name)" class="flex gap-2" aria-label="Sections du coffre">
             <RouterLink to="/coffre" class="chip" :class="{ 'chip-on': route.name === 'coffre' }" :aria-current="route.name === 'coffre' ? 'page' : undefined">Dossiers</RouterLink>
+            <RouterLink to="/coffre/documents" class="chip" :class="{ 'chip-on': route.name === 'coffre-documents' }" :aria-current="route.name === 'coffre-documents' ? 'page' : undefined">Documents</RouterLink>
             <RouterLink to="/coffre/mots-de-passe" class="chip" :class="{ 'chip-on': route.name === 'coffre-secrets' }" :aria-current="route.name === 'coffre-secrets' ? 'page' : undefined">Mots de passe</RouterLink>
         </nav>
 

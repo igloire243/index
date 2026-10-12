@@ -19,7 +19,9 @@ class DossierController extends Controller
             $query->where('contact_id', (int) $request->input('contact_id'));
         }
 
-        return response()->json($query->get()->map(fn (Dossier $d) => $d->only(['id', 'contact_id', 'subject', 'title', 'updated_at', 'files_count'])));
+        return response()->json($query->get()->map(fn (Dossier $d) => array_intersect_key($d->toArray(), array_flip([
+            'id', 'contact_id', 'subject', 'title', 'category', 'expiry_date', 'updated_at', 'files_count',
+        ]))));
     }
 
     public function store(Request $request): JsonResponse
@@ -37,7 +39,12 @@ class DossierController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $dossier = $request->user()->dossiers()->findOrFail($id);
-        $dossier->update($this->validated($request));
+        $data = $this->validated($request);
+        // Une échéance modifiée redonne droit à un rappel (voir SendReminders).
+        if (array_key_exists('expiry_date', $data) && $data['expiry_date'] !== $dossier->expiry_date?->toDateString()) {
+            $data['reminder_sent_for'] = null;
+        }
+        $dossier->update($data);
 
         return response()->json($this->present($dossier->fresh()));
     }
@@ -68,6 +75,11 @@ class DossierController extends Controller
             'subject' => ['nullable', 'string', 'max:120'],
             'contact_id' => ['nullable', 'integer', Rule::exists('contacts', 'id')->where('user_id', $user->id)],
             'summary' => ['nullable', 'string', 'max:20000'],
+            'category' => ['nullable', Rule::in(config('vault.document_categories'))],
+            'document_number' => ['nullable', 'string', 'max:120'],
+            'issued_by' => ['nullable', 'string', 'max:160'],
+            'issue_date' => ['nullable', 'date_format:Y-m-d'],
+            'expiry_date' => ['nullable', 'date_format:Y-m-d'],
         ]);
         if (blank($data['subject'] ?? null) && ! empty($data['contact_id'])) {
             $data['subject'] = $user->contacts()->whereKey($data['contact_id'])->value('name');

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Dossier;
 use App\Models\DossierFile;
 use App\Models\User;
 use App\Services\VaultCrypto;
@@ -175,6 +176,55 @@ class VaultTest extends TestCase
         $this->unlock();
         $this->postJson('/api/dossiers', ['title' => ''])->assertStatus(422)->assertJsonValidationErrors('title');
         $this->postJson('/api/dossiers', ['title' => 'X', 'contact_id' => 12345])->assertStatus(422)->assertJsonValidationErrors('contact_id');
+    }
+
+    /* ---------- Documents personnels (un dossier avec une catégorie) ---------- */
+
+    public function test_a_document_is_created_with_its_category_and_the_document_number_is_encrypted_at_rest(): void
+    {
+        $this->unlock();
+
+        $d = $this->dossier([
+            'title' => 'Passeport', 'category' => 'passeport', 'document_number' => 'AB1234567',
+            'issued_by' => 'DGM', 'issue_date' => '2024-01-10', 'expiry_date' => '2029-01-10',
+        ]);
+        $this->assertSame('passeport', $d['category']);
+        $this->assertSame('AB1234567', $d['document_number']);
+        $this->assertArrayNotHasKey('reminder_sent_for', $d);
+
+        $raw = \DB::table('dossiers')->where('id', $d['id'])->value('document_number');
+        $this->assertStringNotContainsString('AB1234567', $raw);
+
+        $list = $this->getJson('/api/dossiers')->assertOk()->json('0');
+        $this->assertSame('passeport', $list['category'], 'la liste connaît la catégorie, pour filtrer sans tout charger');
+        $this->assertSame('2029-01-10', $list['expiry_date'], 'et l’échéance, pour afficher les alertes');
+        $this->assertArrayNotHasKey('document_number', $list, 'mais pas le numéro de pièce');
+    }
+
+    public function test_document_category_is_restricted_to_known_values(): void
+    {
+        $this->unlock();
+        $this->postJson('/api/dossiers', ['title' => 'X', 'category' => 'inconnu'])->assertStatus(422)->assertJsonValidationErrors('category');
+    }
+
+    public function test_a_dossier_without_category_is_a_plain_dossier(): void
+    {
+        $this->unlock();
+        $d = $this->dossier(['title' => 'Dossier libre']);
+        $this->assertNull($d['category']);
+    }
+
+    public function test_changing_the_expiry_date_rearms_the_reminder(): void
+    {
+        $this->unlock();
+        $d = $this->dossier(['title' => 'Permis', 'category' => 'document_vehicule', 'expiry_date' => '2026-12-01']);
+
+        Dossier::whereKey($d['id'])->update(['reminder_sent_for' => '2026-12-01']);
+        $this->putJson("/api/dossiers/{$d['id']}", ['title' => 'Permis', 'expiry_date' => '2026-12-01'])->assertOk();
+        $this->assertSame('2026-12-01', Dossier::find($d['id'])->reminder_sent_for?->toDateString(), 'échéance inchangée : rappel toujours marqué');
+
+        $this->putJson("/api/dossiers/{$d['id']}", ['title' => 'Permis', 'expiry_date' => '2027-01-01'])->assertOk();
+        $this->assertNull(Dossier::find($d['id'])->reminder_sent_for, 'nouvelle échéance : un rappel redevient possible');
     }
 
     public function test_other_users_data_is_invisible_and_untouchable(): void

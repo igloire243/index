@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Dossier;
 use App\Models\Habit;
 use App\Models\Project;
 use App\Models\PushSubscription;
@@ -248,6 +249,50 @@ class RemindersTest extends TestCase
 
         $this->actingAs($this->user)->putJson("/api/projects/{$project->id}", ['target_date' => '2026-10-13'])->assertOk();
         $this->at('2026-10-13 09:30:00');
+        $this->run_();
+        $this->assertCount(2, $this->push->sent, 'la nouvelle échéance redéclenche un rappel');
+    }
+
+    private function document(array $o = []): Dossier
+    {
+        return $this->user->dossiers()->create($o + ['title' => 'Passeport', 'category' => 'passeport']);
+    }
+
+    public function test_sends_a_document_expiry_reminder_within_30_days(): void
+    {
+        // « now » de setUp : 2026-10-12 09:30 heure locale.
+        $soon = $this->document(['expiry_date' => '2026-10-22']); // dans 10 jours
+        $far = $this->document(['title' => 'Carte grise', 'expiry_date' => '2026-12-01']); // trop loin
+        $plain = $this->user->dossiers()->create(['title' => 'Dossier libre', 'expiry_date' => '2026-10-22']); // pas de catégorie
+
+        $this->run_();
+
+        $bodies = array_column(array_column($this->push->sent, 'payload'), 'body');
+        $this->assertContains('Passeport', $bodies);
+        $this->assertNotContains('Carte grise', $bodies);
+        $this->assertNotContains('Dossier libre', $bodies, 'sans catégorie : ce n’est pas un document');
+
+        $sent = collect($this->push->sent)->firstWhere('payload.body', 'Passeport');
+        $this->assertSame('Expire dans 10 jours', $sent['payload']['title']);
+        $this->assertSame('/coffre/'.$soon->id, $sent['payload']['url']);
+        $this->assertSame('2026-10-22', $soon->fresh()->reminder_sent_for->toDateString());
+
+        // Pas de second envoi en relançant.
+        $sentCount = count($this->push->sent);
+        $this->run_();
+        $this->assertCount($sentCount, $this->push->sent);
+        $this->assertNull($far->fresh()->reminder_sent_for);
+        $this->assertNull($plain->fresh()->reminder_sent_for);
+    }
+
+    public function test_changing_the_expiry_date_allows_a_new_document_reminder(): void
+    {
+        $document = $this->document(['expiry_date' => '2026-10-15']);
+        $this->run_();
+        $this->assertCount(1, $this->push->sent);
+
+        $this->actingAs($this->user)->postJson('/api/vault/unlock', ['password' => 'password'])->assertOk();
+        $this->putJson("/api/dossiers/{$document->id}", ['title' => 'Passeport', 'expiry_date' => '2026-10-16'])->assertOk();
         $this->run_();
         $this->assertCount(2, $this->push->sent, 'la nouvelle échéance redéclenche un rappel');
     }

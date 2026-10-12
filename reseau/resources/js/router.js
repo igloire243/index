@@ -26,6 +26,7 @@ export const router = createRouter({
                 { path: '', name: 'coach', component: () => import('./views/CoachView.vue') },
                 { path: 'projets', name: 'coach-projets', component: () => import('./views/ProjectsView.vue') },
                 { path: 'projets/:id(\\d+)', name: 'coach-projet', component: () => import('./views/ProjectView.vue') },
+                { path: 'cv', name: 'coach-cv', component: () => import('./views/CvView.vue') },
             ],
         },
         {
@@ -58,6 +59,7 @@ export const router = createRouter({
             meta: { title: 'Coffre' },
             children: [
                 { path: '', name: 'coffre', component: () => import('./views/vault/DossiersView.vue') },
+                { path: 'documents', name: 'coffre-documents', component: () => import('./views/vault/DocumentsView.vue') },
                 { path: 'mots-de-passe', name: 'coffre-secrets', component: () => import('./views/vault/SecretsView.vue') },
                 { path: ':id(\\d+)', name: 'coffre-dossier', component: () => import('./views/vault/DossierView.vue') },
             ],

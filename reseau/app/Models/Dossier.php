@@ -8,13 +8,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Dossier extends Model
 {
-    protected $hidden = ['user_id'];
+    protected $hidden = ['user_id', 'reminder_sent_for'];
 
-    protected $fillable = ['contact_id', 'subject', 'title', 'summary'];
+    protected $fillable = [
+        'contact_id', 'subject', 'title', 'summary',
+        'category', 'document_number', 'issued_by', 'issue_date', 'expiry_date', 'reminder_sent_for',
+    ];
 
     protected function casts(): array
     {
-        return ['summary' => 'encrypted'];
+        return [
+            'summary' => 'encrypted',
+            'document_number' => 'encrypted',
+            'issue_date' => 'date:Y-m-d',
+            'expiry_date' => 'date:Y-m-d',
+            'reminder_sent_for' => 'date:Y-m-d',
+        ];
     }
 
     public function files(): HasMany
