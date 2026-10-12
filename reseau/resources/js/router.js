@@ -18,7 +18,16 @@ export const router = createRouter({
         },
         { path: '/carte', redirect: '/contacts/carte' },
         { path: '/domaines', redirect: '/contacts/domaines' },
-        { path: '/coach', name: 'coach', component: () => import('./views/CoachView.vue'), meta: { title: 'Coach' } },
+        {
+            path: '/coach',
+            component: () => import('./views/CoachLayout.vue'),
+            meta: { title: 'Coach' },
+            children: [
+                { path: '', name: 'coach', component: () => import('./views/CoachView.vue') },
+                { path: 'projets', name: 'coach-projets', component: () => import('./views/ProjectsView.vue') },
+                { path: 'projets/:id(\\d+)', name: 'coach-projet', component: () => import('./views/ProjectView.vue') },
+            ],
+        },
         {
             path: '/sante',
             component: () => import('./views/health/HealthLayout.vue'),

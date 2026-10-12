@@ -87,6 +87,11 @@ class User extends Authenticatable
         return $this->hasMany(Dossier::class);
     }
 
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function passkeys(): HasMany
     {
         return $this->hasMany(Passkey::class);

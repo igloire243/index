@@ -4,6 +4,15 @@
  */
 export const CHANGELOG = [
     {
+        id: '2026-10-12-projets',
+        date: '2026-10-12',
+        title: 'Projets et idées',
+        items: [
+            'Nouvel onglet « Projets » dans le Coach : enregistre une idée, découpe-la en étapes, suis sa progression.',
+            'Le Coach signale le projet le plus urgent (échéance proche, en retard, ou qui stagne).',
+        ],
+    },
+    {
         id: '2026-10-11-partage-export',
         date: '2026-10-11',
         title: 'Partage ponctuel et export chiffré du Coffre',

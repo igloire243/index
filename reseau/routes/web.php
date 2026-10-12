@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\MealController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\PasskeyController;
 use App\Http\Controllers\Api\ProgramController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ProjectStepController;
 use App\Http\Controllers\Api\PublicShareController;
 use App\Http\Controllers\Api\PushController;
 use App\Http\Controllers\Api\SecretController;
@@ -94,6 +96,16 @@ Route::prefix('api')->group(function () use ($date) {
 
         Route::get('programs', [ProgramController::class, 'index']);
         Route::post('programs/{key}/adopt', [ProgramController::class, 'adopt'])->where('key', '[a-z0-9-]+');
+
+        Route::get('projects', [ProjectController::class, 'index']);
+        Route::post('projects', [ProjectController::class, 'store']);
+        Route::get('projects/{id}', [ProjectController::class, 'show'])->whereNumber('id');
+        Route::put('projects/{id}', [ProjectController::class, 'update'])->whereNumber('id');
+        Route::delete('projects/{id}', [ProjectController::class, 'destroy'])->whereNumber('id');
+        Route::post('projects/{projectId}/steps', [ProjectStepController::class, 'store'])->whereNumber('projectId');
+        Route::post('projects/{projectId}/steps/reorder', [ProjectStepController::class, 'reorder'])->whereNumber('projectId');
+        Route::put('project-steps/{id}', [ProjectStepController::class, 'update'])->whereNumber('id');
+        Route::delete('project-steps/{id}', [ProjectStepController::class, 'destroy'])->whereNumber('id');
 
         Route::get('passkeys', [PasskeyController::class, 'index']);
         Route::post('passkeys/options', [PasskeyController::class, 'registerOptions']);
