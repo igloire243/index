@@ -77,7 +77,7 @@ async function submit() {
 </script>
 
 <template>
-    <Sheet v-model="open" :title="dossier ? 'Modifier le dossier' : 'Nouveau dossier'">
+    <Sheet v-model="open" :title="dossier ? (isDocument ? 'Modifier le document' : 'Modifier le dossier') : isDocument ? 'Nouveau document' : 'Nouveau dossier'">
         <Wizard :steps="steps" :busy="busy" submit-label="Enregistrer le dossier" @submit="submit" @cancel="open = false">
             <template #default="{ step }">
                 <template v-if="step.key === 'who'">
@@ -100,6 +100,36 @@ async function submit() {
                         <input id="do-title" v-model="form.title" class="input" maxlength="160" placeholder="Vérifications, contrat, rendez-vous…" autocomplete="off" />
                     </div>
                     <p class="muted text-xs">Tu pourras ensuite y ajouter photos, vidéos, enregistrements audio et documents.</p>
+                </template>
+
+                <template v-else-if="step.key === 'admin'">
+                    <div>
+                        <label class="label" for="do-category">Catégorie *</label>
+                        <select id="do-category" v-model="form.category" class="input">
+                            <option value="">Choisir…</option>
+                            <option v-for="(c, key) in DOCUMENT_CATEGORIES" :key="key" :value="key">{{ c.label }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="label" for="do-number">Numéro de pièce</label>
+                        <input id="do-number" v-model="form.document_number" class="input" maxlength="120" autocomplete="off" />
+                        <p class="muted mt-1 text-xs">Chiffré dans la base de données, comme le résumé.</p>
+                    </div>
+                    <div>
+                        <label class="label" for="do-issuer">Émis par</label>
+                        <input id="do-issuer" v-model="form.issued_by" class="input" maxlength="160" autocomplete="off" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="label" for="do-issue-date">Date d’émission</label>
+                            <input id="do-issue-date" v-model="form.issue_date" class="input" type="date" />
+                        </div>
+                        <div>
+                            <label class="label" for="do-expiry-date">Date d’expiration</label>
+                            <input id="do-expiry-date" v-model="form.expiry_date" class="input" type="date" />
+                        </div>
+                    </div>
+                    <p v-if="form.expiry_date" class="muted text-xs">Un rappel sera envoyé 30 jours avant cette date.</p>
                 </template>
 
                 <template v-else>
