@@ -4,6 +4,16 @@
  */
 export const CHANGELOG = [
     {
+        id: '2026-10-12-cv-documents',
+        date: '2026-10-12',
+        title: 'CV et documents personnels',
+        items: [
+            'Un nouvel onglet « CV » dans le Coach : compétences, connaissances, talents, langues, expériences et réalisations, avec export en PDF prêt à imprimer.',
+            'Un nouvel onglet « Documents » dans le Coffre : acte de naissance, diplôme, carte d’identité, passeport, bulletin, document parcellaire, document de véhicule, preuve de paiement… classés par catégorie, avec un rappel 30 jours avant une échéance (passeport, permis…).',
+            'La fusion de plusieurs fichiers (PDF et images) d’un document en un seul PDF téléchargeable, pour tout avoir en un seul fichier.',
+        ],
+    },
+    {
         id: '2026-10-12-projets-suite',
         date: '2026-10-12',
         title: 'Projets : modèles, domaines, dossier lié et rappels',
