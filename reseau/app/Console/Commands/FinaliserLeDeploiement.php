@@ -53,8 +53,13 @@ class FinaliserLeDeploiement extends Command
         // celui-ci a chargé l'ancien en mémoire. Un `migrate` lancé d'ici ne verrait pas les nouvelles classes.
         $this->lancer('optimize:clear', $destination);
 
-        if ($migrer) {
-            $this->lancer('migrate --force', $destination);
+        // Si la migration échoue (verrou SQLite, erreur de schéma…), on ne marque RIEN comme traité : la minute
+        // suivante retentera tout depuis le début plutôt que de laisser l'application tourner sur un schéma à moitié
+        // à jour (c'est ce qui s'est produit avant ce correctif : une migration en échec passait inaperçue).
+        if ($migrer && ! $this->lancer('migrate --force', $destination)) {
+            $this->error('La migration a échoué : rien n’est marqué traité, nouvel essai à la prochaine minute.');
+
+            return self::FAILURE;
         }
 
         $this->lancer('optimize', $destination);
@@ -108,16 +113,18 @@ class FinaliserLeDeploiement extends Command
         return true;
     }
 
-    private function lancer(string $commande, string $dossier): void
+    private function lancer(string $commande, string $dossier): bool
     {
         // Pas d'application à cet endroit (dossier de test, destination mal réglée) : rien à lancer, et surtout pas
         // un `artisan` cherché ailleurs.
         if (! is_file($dossier.'/artisan')) {
-            return;
+            return true;
         }
 
         $processus = new Process([PHP_BINARY, 'artisan', ...explode(' ', $commande)], $dossier);
         $processus->setTimeout(600)->run();
         $this->line(trim($processus->getOutput().$processus->getErrorOutput()));
+
+        return $processus->isSuccessful();
     }
 }
