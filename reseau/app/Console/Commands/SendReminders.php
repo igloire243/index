@@ -3,17 +3,19 @@
 namespace App\Console\Commands;
 
 use App\Models\Habit;
+use App\Models\Project;
 use App\Models\User;
 use App\Services\PushSender;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class SendReminders extends Command
 {
     protected $signature = 'reseau:send-reminders';
 
-    protected $description = "Envoie les rappels d'habitudes dont l'heure est passée (à lancer chaque minute).";
+    protected $description = "Envoie les rappels d'habitudes dont l'heure est passée et les échéances de projets proches (à lancer chaque minute).";
 
     public function handle(PushSender $sender): int
     {
@@ -47,36 +49,81 @@ class SendReminders extends Command
                 })
                 ->values();
 
-            if ($due->isEmpty()) {
-                return;
-            }
+            if ($due->isNotEmpty()) {
+                $payload = [
+                    'title' => $due->count() === 1 ? 'Rappel santé' : $due->count().' rappels santé',
+                    'body' => $due->take(3)->pluck('name')->implode(' · ').($due->count() > 3 ? '…' : ''),
+                    'url' => '/sante',
+                    'tag' => 'habits-'.$today,
+                ];
 
-            $payload = [
-                'title' => $due->count() === 1 ? 'Rappel santé' : $due->count().' rappels santé',
-                'body' => $due->take(3)->pluck('name')->implode(' · ').($due->count() > 3 ? '…' : ''),
-                'url' => '/sante',
-                'tag' => 'habits-'.$today,
-            ];
+                $delivered = false;
+                foreach ($user->pushSubscriptions as $subscription) {
+                    $result = $sender->send($subscription, $payload);
+                    $delivered = $delivered || $result === PushSender::SENT;
+                    if ($result === PushSender::GONE) {
+                        $subscription->delete();
+                    }
+                }
 
-            $delivered = false;
-            foreach ($user->pushSubscriptions as $subscription) {
-                $result = $sender->send($subscription, $payload);
-                $delivered = $delivered || $result === PushSender::SENT;
-                if ($result === PushSender::GONE) {
-                    $subscription->delete();
+                // Un rappel n'est marqué comme envoyé que s'il est vraiment parti : sinon on réessaie à la minute suivante.
+                if ($delivered) {
+                    Habit::whereIn('id', $due->pluck('id'))->update(['last_reminded_on' => $today]);
+                    $sent += $due->count();
                 }
             }
 
-            // Un rappel n'est marqué comme envoyé que s'il est vraiment parti : sinon on réessaie à la minute suivante.
-            if ($delivered) {
-                Habit::whereIn('id', $due->pluck('id'))->update(['last_reminded_on' => $today]);
-                $sent += $due->count();
-            }
+            $sent += $this->sendProjectReminders($sender, $user, $now);
         });
 
         $this->info("$sent rappel(s) envoyé(s).");
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Un rappel, une fois, pour chaque projet (actif, avec échéance) qui arrive à échéance aujourd'hui ou demain.
+     * `reminder_sent_for` empêche de le renvoyer tant que l'échéance ne change pas (voir ProjectController).
+     */
+    private function sendProjectReminders(PushSender $sender, User $user, Carbon $now): int
+    {
+        $today = $now->toDateString();
+        $tomorrow = $now->copy()->addDay()->toDateString();
+
+        $due = $user->projects()
+            ->whereIn('status', ['idea', 'in_progress'])
+            ->whereIn('target_date', [$today, $tomorrow])
+            ->where(fn ($q) => $q->whereNull('reminder_sent_for')->orWhereColumn('reminder_sent_for', '!=', 'target_date'))
+            ->get();
+
+        if ($due->isEmpty()) {
+            return 0;
+        }
+
+        $delivered = false;
+        foreach ($user->pushSubscriptions as $subscription) {
+            foreach ($due as $project) {
+                $payload = [
+                    'title' => $project->target_date->toDateString() === $today ? 'Échéance aujourd’hui' : 'Échéance demain',
+                    'body' => $project->title,
+                    'url' => '/coach/projets/'.$project->id,
+                    'tag' => 'projet-'.$project->id,
+                ];
+                $result = $sender->send($subscription, $payload);
+                $delivered = $delivered || $result === PushSender::SENT;
+                if ($result === PushSender::GONE) {
+                    $subscription->delete();
+
+                    break;
+                }
+            }
+        }
+
+        if ($delivered) {
+            Project::whereIn('id', $due->pluck('id'))->update(['reminder_sent_for' => DB::raw('target_date')]);
+        }
+
+        return $delivered ? $due->count() : 0;
     }
 
     private function localNow(User $user): Carbon

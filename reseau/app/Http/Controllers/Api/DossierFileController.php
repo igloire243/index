@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\DossierFile;
+use App\Models\DossierFileShare;
 use App\Services\VaultCrypto;
 use App\Services\VaultFiles;
 use Illuminate\Http\JsonResponse;
@@ -153,6 +154,33 @@ class DossierFileController extends Controller
                 flush();
             }
         }, $status, $headers);
+    }
+
+    /** Crée un lien de partage à usage unique vers ce fichier, valable la durée choisie. */
+    public function shareStore(Request $request, int $id): JsonResponse
+    {
+        $file = $this->owned($request, $id);
+        abort_unless($file->status === 'ready', 404);
+        $data = $request->validate(['minutes' => ['required', 'integer', 'in:60,1440,10080']]); // 1 h, 24 h, 7 j
+
+        [$share, $token] = DossierFileShare::issue($file, $data['minutes']);
+
+        return response()->json(['id' => $share->id, 'token' => $token, 'expires_at' => $share->expires_at], 201);
+    }
+
+    /** Liens actifs (ni expirés ni déjà vus) sur ce fichier, pour les lister et pouvoir les révoquer. */
+    public function shareIndex(Request $request, int $id): JsonResponse
+    {
+        $file = $this->owned($request, $id);
+
+        return response()->json($file->shares()->active()->orderByDesc('id')->get(['id', 'expires_at', 'created_at']));
+    }
+
+    public function shareDestroy(Request $request, int $shareId): JsonResponse
+    {
+        DossierFileShare::where('user_id', $request->user()->id)->whereKey($shareId)->firstOrFail()->delete();
+
+        return response()->json(['ok' => true]);
     }
 
     private function owned(Request $request, int $id): DossierFile

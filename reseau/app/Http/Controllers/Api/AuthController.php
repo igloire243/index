@@ -58,7 +58,10 @@ class AuthController extends Controller
 
     public function updateProfile(Request $request): JsonResponse
     {
-        $data = $request->validate(['timezone' => ['required', 'timezone:all']]);
+        $data = $request->validate([
+            'timezone' => ['sometimes', 'required', 'timezone:all'],
+            'network_goal_monthly' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:200'],
+        ]);
         $request->user()->update($data);
 
         return response()->json($this->userPayload($request->user()));
@@ -66,6 +69,9 @@ class AuthController extends Controller
 
     private function userPayload($user): array
     {
-        return ['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'timezone' => $user->timezone];
+        return [
+            'id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'timezone' => $user->timezone,
+            'network_goal_monthly' => $user->network_goal_monthly,
+        ];
     }
 }

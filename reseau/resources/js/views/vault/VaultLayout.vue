@@ -4,6 +4,7 @@ import { RouterLink, RouterView, useRoute } from 'vue-router';
 import EmptyState from '../../components/EmptyState.vue';
 import Icon from '../../components/Icon.vue';
 import Meter from '../../components/Meter.vue';
+import ExportSheet from '../../components/vault/ExportSheet.vue';
 import { fmtSize } from '../../lib/vault';
 import { loadContacts } from '../../stores/contacts';
 import { toast } from '../../stores/session';
@@ -13,6 +14,7 @@ const route = useRoute();
 const password = ref('');
 const busy = ref(false);
 const error = ref('');
+const exporting = ref(false);
 
 onMounted(() => {
     loadVaultStatus().catch((e) => toast(e.message, 'error'));
@@ -60,11 +62,15 @@ async function unlock() {
             <Meter label="Espace utilisé" :value="`${fmtSize(vault.used)} sur ${fmtSize(vault.quota)}`" :ratio="vault.quota ? vault.used / vault.quota : 0" />
             <div class="flex items-center justify-between gap-2">
                 <p class="muted text-xs">Fichiers chiffrés avant d’être écrits sur le disque.</p>
-                <button type="button" class="btn btn-sm shrink-0" @click="lockVault().catch((e) => toast(e.message, 'error'))">
-                    <Icon name="lock" :size="14" /> Verrouiller
-                </button>
+                <span class="flex shrink-0 gap-2">
+                    <button type="button" class="btn btn-sm" @click="exporting = true"><Icon name="download" :size="14" /> Exporter</button>
+                    <button type="button" class="btn btn-sm" @click="lockVault().catch((e) => toast(e.message, 'error'))">
+                        <Icon name="lock" :size="14" /> Verrouiller
+                    </button>
+                </span>
             </div>
         </div>
+        <ExportSheet v-model="exporting" />
 
         <nav v-if="route.name === 'coffre' || route.name === 'coffre-secrets'" class="flex gap-2" aria-label="Sections du coffre">
             <RouterLink to="/coffre" class="chip" :class="{ 'chip-on': route.name === 'coffre' }" :aria-current="route.name === 'coffre' ? 'page' : undefined">Dossiers</RouterLink>

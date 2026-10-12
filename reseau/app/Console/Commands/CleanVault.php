@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\DossierFile;
+use App\Models\DossierFileShare;
 use App\Services\VaultFiles;
 use Illuminate\Console\Command;
 
@@ -10,10 +11,13 @@ class CleanVault extends Command
 {
     protected $signature = 'reseau:vault-clean';
 
-    protected $description = 'Supprime les envois abandonnés (plus de 24 h) et les fichiers chiffrés sans fiche dans la base.';
+    protected $description = 'Supprime les envois abandonnés (plus de 24 h), les fichiers chiffrés sans fiche et les vieux liens de partage.';
 
     public function handle(VaultFiles $vault): int
     {
+        // Liens expirés depuis longtemps ou déjà utilisés : ne servent plus à rien, autant libérer la place.
+        $shares = DossierFileShare::where('expires_at', '<', now()->subDays(30))->orWhere('viewed_at', '<', now()->subDays(30))->delete();
+
         $stale = 0;
         DossierFile::where('status', 'uploading')->where('updated_at', '<', now()->subDay())->each(function (DossierFile $file) use ($vault, &$stale) {
             $vault->delete($file);
@@ -32,7 +36,7 @@ class CleanVault extends Command
             }
         }
 
-        $this->info("$stale envoi(s) abandonné(s) et $orphans fichier(s) orphelin(s) supprimé(s).");
+        $this->info("$stale envoi(s) abandonné(s), $orphans fichier(s) orphelin(s) et $shares lien(s) de partage ancien(s) supprimés.");
 
         return self::SUCCESS;
     }

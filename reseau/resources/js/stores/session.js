@@ -67,3 +67,7 @@ export async function logout() {
 hooks.onUnauthorized = () => {
     session.user = null;
 };
+
+export async function setNetworkGoal(value) {
+    session.user = await api('profile', { method: 'PUT', body: { network_goal_monthly: value } });
+}

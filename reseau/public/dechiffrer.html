@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Déchiffrer une sauvegarde Réseau</title>
+<style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 32rem; margin: 2.5rem auto; padding: 0 1.25rem; line-height: 1.5; color: #0f172a; background: #f8fafc; }
+    @media (prefers-color-scheme: dark) { body { color: #f1f5f9; background: #020617; } }
+    h1 { font-size: 1.25rem; }
+    .muted { opacity: .7; font-size: .9rem; }
+    label { display: block; font-weight: 600; margin: 1rem 0 .3rem; font-size: .9rem; }
+    input[type=file], input[type=password] { width: 100%; box-sizing: border-box; padding: .6rem; border-radius: .6rem; border: 1px solid #94a3b8; background: transparent; color: inherit; font-size: 1rem; }
+    button { margin-top: 1.25rem; width: 100%; padding: .75rem; border-radius: .6rem; border: none; background: #4f46e5; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    #message { margin-top: 1rem; font-size: .9rem; white-space: pre-wrap; }
+    .error { color: #dc2626; }
+    .ok { color: #16a34a; }
+</style>
+</head>
+<body>
+    <h1>🔓 Déchiffrer une sauvegarde Réseau</h1>
+    <p class="muted">
+        Cette page fonctionne entièrement dans ton navigateur : le fichier et le mot de passe ne partent nulle part,
+        même hors connexion. Enregistre-la sur ton ordinateur pour pouvoir t'en servir plus tard, sans le site.
+    </p>
+
+    <label for="f">Fichier de sauvegarde (.enc)</label>
+    <input id="f" type="file" accept=".enc">
+
+    <label for="p">Mot de passe de cet export</label>
+    <input id="p" type="password" autocomplete="off">
+
+    <button id="go" type="button">Déchiffrer et télécharger le .zip</button>
+    <p id="message" role="status"></p>
+
+<script>
+const MAGIC = 'RSXP2';
+const $ = (id) => document.getElementById(id);
+const say = (text, cls) => { const m = $('message'); m.textContent = text; m.className = cls || ''; };
+
+$('go').addEventListener('click', async () => {
+    const file = $('f').files[0];
+    const password = $('p').value;
+    if (!file) return say('Choisis d’abord un fichier .enc.', 'error');
+    if (!password) return say('Saisis le mot de passe de cet export.', 'error');
+
+    $('go').disabled = true;
+    say('Déchiffrement…');
+    try {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const magic = new TextDecoder().decode(bytes.slice(0, 5));
+        if (magic !== MAGIC) throw new Error('Ce fichier n’est pas (ou plus) un export Réseau reconnu.');
+
+        const salt = bytes.slice(5, 21);
+        const iv = bytes.slice(21, 33);
+        const cipher = bytes.slice(33); // chiffré + étiquette d'authentification, accolés
+
+        const passKey = await crypto.subtle.importKey('raw', new TextEncoder().encode(password), 'PBKDF2', false, ['deriveKey']);
+        const key = await crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' },
+            passKey, { name: 'AES-GCM', length: 256 }, false, ['decrypt'],
+        );
+
+        let plain;
+        try {
+            plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv, tagLength: 128 }, key, cipher);
+        } catch {
+            throw new Error('Mot de passe incorrect, ou fichier corrompu.');
+        }
+
+        const blob = new Blob([plain], { type: 'application/zip' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = file.name.replace(/\.enc$/i, '') + '.zip';
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+        say('Terminé : le fichier .zip a été téléchargé.', 'ok');
+    } catch (e) {
+        say(e.message, 'error');
+    } finally {
+        $('go').disabled = false;
+    }
+});
+</script>
+</body>
+</html>

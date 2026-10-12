@@ -124,6 +124,7 @@ déploiement (qui vide le cache), ou après `php artisan optimize:clear`.
 | `amorcage.log` absent, même « Copie échouée : impossible de créer » avec un chemin visiblement tronqué (ex. `//reseau-app`) | lancée sans l'argument de destination | relance avec `php amorcage.php /home/reseau-app` (chemin réel) |
 | Fichier plus petit qu'attendu après « Modifier » dans le panneau LWS | le collage de texte a tronqué le fichier en plein milieu, sans erreur visible | utilise **Charger** (envoi du fichier) plutôt que coller du texte, surtout pour un fichier de plus de quelques lignes |
 | `sodium` / `fileinfo` manquant | extension désactivée | l'activer dans le panneau LWS (le Coffre en a besoin) |
+| Export du Coffre impossible | extension `zip` ou `openssl` absente du PHP du **site** (pas celui du CRON, qui n'a pas besoin de `zip`) | les activer dans le panneau LWS ; `openssl` est quasi toujours déjà présente |
 | La migration ne se fait pas | `migrer=0`, ou une migration échoue en boucle | lire la sortie du CRON ; la version n'est marquée traitée qu'après succès |
 | Géolocalisation, micro, Face ID refusés | site en HTTP | activer le SSL du sous-domaine |
 

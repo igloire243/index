@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\DebtController;
 use App\Http\Controllers\Api\DossierController;
 use App\Http\Controllers\Api\DossierFileController;
+use App\Http\Controllers\Api\ExportController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\GoalController;
 use App\Http\Controllers\Api\HabitController;
@@ -14,6 +15,9 @@ use App\Http\Controllers\Api\MealController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\PasskeyController;
 use App\Http\Controllers\Api\ProgramController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\ProjectStepController;
+use App\Http\Controllers\Api\PublicShareController;
 use App\Http\Controllers\Api\PushController;
 use App\Http\Controllers\Api\SecretController;
 use App\Http\Controllers\Api\VaultController;
@@ -25,6 +29,13 @@ Route::prefix('api')->group(function () use ($date) {
     Route::post('login', [AuthController::class, 'login']);
     Route::post('passkey-login/options', [PasskeyController::class, 'loginOptions']);
     Route::post('passkey-login', [PasskeyController::class, 'login']);
+
+    // Lien de partage public (sans session, sans verrou du coffre) : le jeton est la seule preuve d'accès.
+    // Limité en débit pour dissuader de deviner un jeton (48 caractères aléatoires : en pratique irréalisable).
+    Route::middleware('throttle:30,1')->group(function () {
+        Route::get('partage/{token}', [PublicShareController::class, 'show']);
+        Route::get('partage/{token}/contenu', [PublicShareController::class, 'content']);
+    });
 
     Route::middleware('auth')->group(function () use ($date) {
         Route::post('logout', [AuthController::class, 'logout']);
@@ -86,6 +97,16 @@ Route::prefix('api')->group(function () use ($date) {
         Route::get('programs', [ProgramController::class, 'index']);
         Route::post('programs/{key}/adopt', [ProgramController::class, 'adopt'])->where('key', '[a-z0-9-]+');
 
+        Route::get('projects', [ProjectController::class, 'index']);
+        Route::post('projects', [ProjectController::class, 'store']);
+        Route::get('projects/{id}', [ProjectController::class, 'show'])->whereNumber('id');
+        Route::put('projects/{id}', [ProjectController::class, 'update'])->whereNumber('id');
+        Route::delete('projects/{id}', [ProjectController::class, 'destroy'])->whereNumber('id');
+        Route::post('projects/{projectId}/steps', [ProjectStepController::class, 'store'])->whereNumber('projectId');
+        Route::post('projects/{projectId}/steps/reorder', [ProjectStepController::class, 'reorder'])->whereNumber('projectId');
+        Route::put('project-steps/{id}', [ProjectStepController::class, 'update'])->whereNumber('id');
+        Route::delete('project-steps/{id}', [ProjectStepController::class, 'destroy'])->whereNumber('id');
+
         Route::get('passkeys', [PasskeyController::class, 'index']);
         Route::post('passkeys/options', [PasskeyController::class, 'registerOptions']);
         Route::post('passkeys', [PasskeyController::class, 'register']);
@@ -114,6 +135,12 @@ Route::prefix('api')->group(function () use ($date) {
             Route::get('dossier-files/{id}/content', [DossierFileController::class, 'content'])->whereNumber('id');
             Route::put('dossier-files/{id}', [DossierFileController::class, 'update'])->whereNumber('id');
             Route::delete('dossier-files/{id}', [DossierFileController::class, 'destroy'])->whereNumber('id');
+
+            Route::get('dossier-files/{id}/partages', [DossierFileController::class, 'shareIndex'])->whereNumber('id');
+            Route::post('dossier-files/{id}/partages', [DossierFileController::class, 'shareStore'])->whereNumber('id');
+            Route::delete('dossier-file-shares/{id}', [DossierFileController::class, 'shareDestroy'])->whereNumber('id');
+
+            Route::post('export', [ExportController::class, 'store']);
         });
 
         Route::get('push/key', [PushController::class, 'key']);

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Habit;
+use App\Models\Project;
 use App\Models\PushSubscription;
 use App\Models\User;
 use App\Services\PushSender;
@@ -198,5 +199,56 @@ class RemindersTest extends TestCase
         $this->push->on = false;
         $this->postJson('/api/push/test')->assertStatus(503);
         $this->getJson('/api/push/key')->assertOk()->assertJsonPath('public_key', null);
+    }
+
+    private function project(array $o = []): Project
+    {
+        return $this->user->projects()->create($o + ['title' => 'Ouvrir un salon de coiffure', 'status' => 'in_progress']);
+    }
+
+    public function test_sends_a_project_deadline_reminder_once(): void
+    {
+        // « now » de setUp : 2026-10-12 09:30 heure locale (Africa/Kinshasa).
+        $today = $this->project(['target_date' => '2026-10-12']);
+        $tomorrow = $this->project(['title' => 'Apprendre l’anglais', 'target_date' => '2026-10-13']);
+        $later = $this->project(['title' => 'Trop loin', 'target_date' => '2026-10-20']);
+        $this->project(['title' => 'Idée sans échéance']);
+        $this->project(['title' => 'Terminé', 'status' => 'done', 'target_date' => '2026-10-12']);
+
+        $this->run_();
+
+        $bodies = array_column(array_column($this->push->sent, 'payload'), 'body');
+        $this->assertContains('Ouvrir un salon de coiffure', $bodies);
+        $this->assertContains('Apprendre l’anglais', $bodies);
+        $this->assertNotContains('Trop loin', $bodies);
+        $this->assertNotContains('Idée sans échéance', $bodies);
+        $this->assertNotContains('Terminé', $bodies);
+
+        $titles = array_column(array_column($this->push->sent, 'payload'), 'title');
+        $this->assertContains('Échéance aujourd’hui', $titles);
+        $this->assertContains('Échéance demain', $titles);
+
+        $sent = collect($this->push->sent)->firstWhere('payload.body', 'Ouvrir un salon de coiffure');
+        $this->assertSame('/coach/projets/'.$today->id, $sent['payload']['url']);
+        $this->assertSame($today->target_date->toDateString(), $today->fresh()->reminder_sent_for->toDateString());
+
+        // Pas de second envoi, même en relançant plus tard le même jour.
+        $sentCount = count($this->push->sent);
+        $this->at('2026-10-12 15:00:00');
+        $this->run_();
+        $this->assertCount($sentCount, $this->push->sent);
+        $this->assertSame('2026-10-20', $later->fresh()->target_date->toDateString(), 'inchangé, hors fenêtre');
+    }
+
+    public function test_changing_the_target_date_allows_a_new_reminder(): void
+    {
+        $project = $this->project(['target_date' => '2026-10-12']);
+        $this->run_();
+        $this->assertCount(1, $this->push->sent);
+
+        $this->actingAs($this->user)->putJson("/api/projects/{$project->id}", ['target_date' => '2026-10-13'])->assertOk();
+        $this->at('2026-10-13 09:30:00');
+        $this->run_();
+        $this->assertCount(2, $this->push->sent, 'la nouvelle échéance redéclenche un rappel');
     }
 }

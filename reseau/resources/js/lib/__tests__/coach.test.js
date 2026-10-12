@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildSuggestions, contactMeters, seededRandom } from '../coach';
+import { buildSuggestions, contactMeters, monthlyNetworkProgress, seededRandom } from '../coach';
 import { parseDomains, parseVcf } from '../contacts';
 
 const NOW = Date.now();
@@ -130,6 +130,21 @@ describe('contactMeters', () => {
 
     it('évite les divisions par zéro', () => {
         for (const m of contactMeters([])) expect(Number.isFinite(m.ratio)).toBe(true);
+    });
+});
+
+describe('monthlyNetworkProgress', () => {
+    it('compte les contacts distincts relancés ce mois-ci', () => {
+        const contacts = [
+            { id: 1, last_contact: '2026-10-05' },
+            { id: 2, last_contact: '2026-10-28' },
+            { id: 3, last_contact: '2026-09-30' },
+            { id: 4, last_contact: null },
+            { id: 5 },
+        ];
+        expect(monthlyNetworkProgress(contacts, '2026-10-15')).toEqual({ count: 2, month: '2026-10' });
+        expect(monthlyNetworkProgress(contacts, '2026-09-15')).toEqual({ count: 1, month: '2026-09' });
+        expect(monthlyNetworkProgress([], '2026-10-15')).toEqual({ count: 0, month: '2026-10' });
     });
 });
 

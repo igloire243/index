@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'timezone'])]
+#[Fillable(['name', 'email', 'password', 'timezone', 'network_goal_monthly'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -85,6 +85,11 @@ class User extends Authenticatable
     public function dossiers(): HasMany
     {
         return $this->hasMany(Dossier::class);
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
     }
 
     public function passkeys(): HasMany

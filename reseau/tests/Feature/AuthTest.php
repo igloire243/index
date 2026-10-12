@@ -70,6 +70,22 @@ class AuthTest extends TestCase
         $this->putJson('/api/profile', ['timezone' => 'Mars/Olympus'])->assertStatus(422);
     }
 
+    public function test_the_monthly_network_goal_can_be_set_cleared_and_validated(): void
+    {
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $this->getJson('/api/me')->assertJsonPath('network_goal_monthly', null);
+        $this->putJson('/api/profile', ['network_goal_monthly' => 5])->assertOk()->assertJsonPath('network_goal_monthly', 5);
+        $this->putJson('/api/profile', ['network_goal_monthly' => null])->assertOk()->assertJsonPath('network_goal_monthly', null);
+        $this->putJson('/api/profile', ['network_goal_monthly' => 0])->assertStatus(422);
+        $this->putJson('/api/profile', ['network_goal_monthly' => 201])->assertStatus(422);
+
+        // Mettre à jour un seul champ ne touche pas à l'autre.
+        $this->putJson('/api/profile', ['timezone' => 'Africa/Kinshasa', 'network_goal_monthly' => 5])->assertOk();
+        $this->putJson('/api/profile', ['network_goal_monthly' => 8])->assertOk()->assertJsonPath('timezone', 'Africa/Kinshasa');
+    }
+
     public function test_spa_and_unknown_api_routes(): void
     {
         $this->withoutVite();
