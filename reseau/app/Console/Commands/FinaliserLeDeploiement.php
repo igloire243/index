@@ -93,7 +93,7 @@ class FinaliserLeDeploiement extends Command
             return true;
         }
 
-        $this->line('Nouveau code dans le dépôt : '.$arrivee);
+        $this->line('['.now()->toDateTimeString().'] Nouveau code dans le dépôt : '.$arrivee);
         File::ensureDirectoryExists($destination);
         $copie = new Process(['cp', '-a', $depot.'/.', $destination.'/']);
         $copie->setTimeout(600)->run();
