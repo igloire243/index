@@ -25,10 +25,23 @@ export function progressRatio(project) {
 
 export const isStalled = (project, today = isoDate(), days = 21) => project.status === 'in_progress' && daysSince(project.updated_at?.slice(0, 10) ?? today) >= days;
 
-export function filterProjects(list, { query = '', status = '' } = {}) {
+export function filterProjects(list, { query = '', status = '', domain = '' } = {}) {
     const q = norm(query).trim();
 
-    return list.filter((p) => (!status || p.status === status) && (!q || norm(`${p.title} ${p.description ?? ''}`).includes(q)));
+    return list.filter(
+        (p) => (!status || p.status === status) && (!domain || norm(p.domain ?? '') === norm(domain)) && (!q || norm(`${p.title} ${p.description ?? ''}`).includes(q)),
+    );
+}
+
+/** Un petit résumé pour le tableau de bord « Comment ça va » : combien de projets dans chaque état. */
+export function projectStats(list, today = isoDate()) {
+    const month = today.slice(0, 7);
+
+    return {
+        active: list.filter((p) => ACTIVE_STATUSES.includes(p.status)).length,
+        doneThisMonth: list.filter((p) => p.status === 'done' && p.completed_at?.slice(0, 7) === month).length,
+        total: list.length,
+    };
 }
 
 /**

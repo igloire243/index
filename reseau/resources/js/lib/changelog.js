@@ -4,6 +4,18 @@
  */
 export const CHANGELOG = [
     {
+        id: '2026-10-12-projets-suite',
+        date: '2026-10-12',
+        title: 'Projets : modèles, domaines, dossier lié et rappels',
+        items: [
+            'Des modèles de projet (ouvrir un commerce, apprendre une langue…) qui pré-remplissent le titre et créent les étapes automatiquement.',
+            'Un domaine sur chaque projet, filtrable, comme pour les contacts.',
+            'La possibilité de lier un projet à un dossier du Coffre — visible uniquement une fois le Coffre déverrouillé.',
+            'Un rappel push la veille et le jour de l’échéance d’un projet.',
+            'Un nouveau tableau de bord « Comment ça va ? » (dans Réglages) : un résumé du réseau, de la santé, des finances et des projets.',
+        ],
+    },
+    {
         id: '2026-10-12-projets',
         date: '2026-10-12',
         title: 'Projets et idées',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { filterProjects, isStalled, progress, progressRatio, projectToNudge } from '../projects';
+import { filterProjects, isStalled, progress, progressRatio, projectStats, projectToNudge } from '../projects';
 
 describe('progress', () => {
     it('renvoie null sans étape', () => {
@@ -36,6 +36,26 @@ describe('filterProjects', () => {
     it('filtre par texte, sans accents', () => {
         expect(filterProjects(list, { query: 'ecole' }).map((p) => p.id)).toEqual([3]);
         expect(filterProjects(list, { query: 'kinshasa' }).map((p) => p.id)).toEqual([1]);
+    });
+    it('filtre par domaine, insensible à la casse et aux accents', () => {
+        const withDomains = [{ id: 1, title: 'A', status: 'idea', domain: 'Éducation' }, { id: 2, title: 'B', status: 'idea', domain: 'commerce' }];
+        expect(filterProjects(withDomains, { domain: 'education' }).map((p) => p.id)).toEqual([1]);
+    });
+});
+
+describe('projectStats', () => {
+    it('compte les projets actifs, terminés ce mois-ci, et le total', () => {
+        const list = [
+            { status: 'idea' },
+            { status: 'in_progress' },
+            { status: 'done', completed_at: '2026-10-05T00:00:00Z' },
+            { status: 'done', completed_at: '2026-09-20T00:00:00Z' },
+            { status: 'abandoned' },
+        ];
+        expect(projectStats(list, '2026-10-12')).toEqual({ active: 2, doneThisMonth: 1, total: 5 });
+    });
+    it('gère une liste vide', () => {
+        expect(projectStats([], '2026-10-12')).toEqual({ active: 0, doneThisMonth: 0, total: 0 });
     });
 });
 

@@ -63,6 +63,7 @@ export const router = createRouter({
             ],
         },
         { path: '/reglages', name: 'reglages', component: () => import('./views/SettingsView.vue'), meta: { title: 'Réglages' } },
+        { path: '/comment-ca-va', name: 'comment-ca-va', component: () => import('./views/StatusView.vue'), meta: { title: 'Comment ça va ?' } },
         { path: '/nouveautes', name: 'nouveautes', component: () => import('./views/ChangelogView.vue'), meta: { title: 'Nouveautés' } },
         { path: '/recherche', name: 'recherche', component: () => import('./views/SearchView.vue'), meta: { title: 'Recherche' } },
         // Lien de partage public : accessible sans compte, le jeton dans l'URL est la seule preuve d'accès.

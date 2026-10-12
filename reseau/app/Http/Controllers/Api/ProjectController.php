@@ -43,6 +43,11 @@ class ProjectController extends Controller
             $data['completed_at'] = null;
         }
 
+        // Une échéance changée réarme le rappel : l'ancien « déjà envoyé » ne concernait que l'ancienne date.
+        if (array_key_exists('target_date', $data) && $data['target_date'] !== $project->target_date?->toDateString()) {
+            $data['reminder_sent_for'] = null;
+        }
+
         $project->update($data);
 
         return response()->json($project->fresh('steps'));
@@ -66,9 +71,11 @@ class ProjectController extends Controller
 
         return $request->validate([
             'title' => [$project ? 'sometimes' : 'required', 'string', 'max:160'],
+            'domain' => ['nullable', 'string', 'max:40'],
             'description' => ['nullable', 'string', 'max:10000'],
             'status' => ['sometimes', Rule::in(Project::STATUSES)],
             'contact_id' => ['nullable', 'integer', Rule::exists('contacts', 'id')->where('user_id', $user->id)],
+            'dossier_id' => ['nullable', 'integer', Rule::exists('dossiers', 'id')->where('user_id', $user->id)],
             'target_date' => ['nullable', 'date'],
         ]);
     }

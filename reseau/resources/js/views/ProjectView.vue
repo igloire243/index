@@ -8,6 +8,7 @@ import { progress, progressRatio, STATUSES } from '../lib/projects';
 import { contacts } from '../stores/contacts';
 import { addStep, loadProject, removeProject, removeStep, reorderSteps, saveProject, toggleStep } from '../stores/projects';
 import { toast } from '../stores/session';
+import { loadDossiers, vault } from '../stores/vault';
 
 const route = useRoute();
 const router = useRouter();
@@ -20,6 +21,9 @@ const addingStep = ref(false);
 
 const id = computed(() => Number(route.params.id));
 const contactName = computed(() => contacts.list.find((c) => c.id === project.value?.contact_id)?.name);
+const linkedDossier = computed(() => vault.dossiers.find((d) => d.id === project.value?.dossier_id));
+
+if (vault.unlocked) loadDossiers().catch(() => {});
 
 async function load() {
     loading.value = true;
@@ -118,9 +122,14 @@ const allDone = computed(() => progress(project.value ?? {}) && progress(project
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 class="text-lg font-semibold break-words">{{ project.title }}</h2>
                             <span class="tag">{{ STATUSES[project.status].label }}</span>
+                            <span v-if="project.domain" class="tag">{{ project.domain }}</span>
                         </div>
                         <p v-if="contactName" class="muted">Peut aider : {{ contactName }}</p>
                         <p v-if="project.target_date" class="muted">Échéance : {{ new Date(project.target_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) }}</p>
+                        <p v-if="project.dossier_id && linkedDossier" class="muted">
+                            <RouterLink :to="`/coffre/${project.dossier_id}`" class="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400"><Icon name="lock" :size="14" /> Voir le dossier « {{ linkedDossier.title }} »</RouterLink>
+                        </p>
+                        <p v-else-if="project.dossier_id" class="muted inline-flex items-center gap-1 text-xs"><Icon name="lock" :size="12" /> Dossier lié — déverrouille le Coffre pour le voir</p>
                     </div>
                     <span class="flex shrink-0 gap-2">
                         <button type="button" class="btn btn-sm" @click="formOpen = true">Modifier</button>

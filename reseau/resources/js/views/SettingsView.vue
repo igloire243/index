@@ -106,6 +106,15 @@ async function wipe() {
 
 <template>
     <div class="space-y-4">
+        <RouterLink to="/comment-ca-va" class="card flex items-center gap-3">
+            <span class="grid size-11 shrink-0 place-items-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-300"><Icon name="chart" :size="20" /></span>
+            <span class="flex-1">
+                <span class="block font-semibold">Comment ça va ?</span>
+                <span class="muted block text-sm">Un résumé de ton réseau, ta santé, tes finances et tes projets.</span>
+            </span>
+            <Icon name="right" :size="18" class="muted shrink-0" />
+        </RouterLink>
+
         <section class="card space-y-3">
             <h2 class="font-semibold">Compte</h2>
             <p class="text-sm">

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Project;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -178,5 +179,62 @@ class ProjectsTest extends TestCase
 
         $this->deleteJson("/api/contacts/$contact")->assertOk();
         $this->getJson("/api/projects/{$p['id']}")->assertOk()->assertJsonPath('contact_id', null);
+    }
+
+    public function test_a_domain_tag_can_be_set(): void
+    {
+        $p = $this->project(['domain' => 'commerce']);
+        $this->assertSame('commerce', $p['domain']);
+        $this->postJson('/api/projects', ['title' => 'X', 'domain' => str_repeat('a', 41)])->assertStatus(422);
+    }
+
+    public function test_a_project_can_be_linked_to_a_dossier_the_user_owns_without_leaking_its_content(): void
+    {
+        $this->postJson('/api/vault/unlock', ['password' => 'password'])->assertOk();
+        $dossier = $this->postJson('/api/dossiers', ['title' => 'Secret du projet', 'summary' => 'Très confidentiel'])->json();
+        $this->postJson('/api/vault/lock')->assertOk();
+
+        $p = $this->project(['dossier_id' => $dossier['id']]);
+        $this->assertSame($dossier['id'], $p['dossier_id']);
+        // Le titre et le résumé du dossier ne doivent JAMAIS apparaître dans la réponse du projet (coffre verrouillé).
+        $raw = $this->getJson("/api/projects/{$p['id']}")->assertOk()->getContent();
+        $this->assertStringNotContainsString('Secret du projet', $raw);
+        $this->assertStringNotContainsString('confidentiel', $raw);
+        $this->assertArrayNotHasKey('dossier', $this->getJson("/api/projects/{$p['id']}")->json());
+    }
+
+    public function test_a_project_cannot_be_linked_to_someone_elses_dossier(): void
+    {
+        $other = User::factory()->create();
+        $this->actingAs($other);
+        $this->postJson('/api/vault/unlock', ['password' => 'password'])->assertOk();
+        $theirDossier = $this->postJson('/api/dossiers', ['title' => 'X'])->json('id');
+
+        $this->actingAs($this->user);
+        $this->postJson('/api/projects', ['title' => 'X', 'dossier_id' => $theirDossier])->assertStatus(422);
+    }
+
+    public function test_deleting_the_linked_dossier_detaches_it_from_the_project(): void
+    {
+        $this->postJson('/api/vault/unlock', ['password' => 'password'])->assertOk();
+        $dossier = $this->postJson('/api/dossiers', ['title' => 'X'])->json();
+        $this->postJson('/api/vault/lock')->assertOk();
+        $p = $this->project(['dossier_id' => $dossier['id']]);
+
+        $this->postJson('/api/vault/unlock', ['password' => 'password'])->assertOk();
+        $this->deleteJson("/api/dossiers/{$dossier['id']}")->assertOk();
+
+        $this->getJson("/api/projects/{$p['id']}")->assertOk()->assertJsonPath('dossier_id', null);
+    }
+
+    public function test_changing_the_target_date_rearms_the_reminder(): void
+    {
+        $p = $this->project(['target_date' => '2026-10-20']);
+        Project::whereKey($p['id'])->update(['reminder_sent_for' => '2026-10-20']);
+
+        // Même date : le rappel déjà envoyé reste marqué (pas vérifiable via l'API, le champ est caché ;
+        // on vérifie seulement que changer la date le réarme).
+        $this->putJson("/api/projects/{$p['id']}", ['target_date' => '2026-10-25'])->assertOk();
+        $this->assertNull(Project::find($p['id'])->reminder_sent_for);
     }
 }
