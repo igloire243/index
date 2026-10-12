@@ -23,4 +23,11 @@ return [
 
     // Contenants audio/vidéo ambigus : un enregistrement vocal .webm ou .m4a est reconnu comme « vidéo ».
     'audio_containers' => ['video/webm', 'video/mp4', 'video/ogg', 'video/3gpp', 'application/ogg'],
+
+    // Catégories des documents personnels (un dossier avec une catégorie devient un « document », pas un dossier
+    // libre). Les libellés sont affichés par l'interface (resources/js/lib/documents.js) ; seules les clés comptent ici.
+    'document_categories' => [
+        'acte_naissance', 'diplome', 'certificat', 'carte_identite', 'passeport', 'bulletin',
+        'document_parcellaire', 'document_vehicule', 'preuve_paiement', 'autre',
+    ],
 ];
