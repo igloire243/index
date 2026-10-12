@@ -1,16 +1,21 @@
 <?php
 
 use App\Http\Controllers\Api\AccountController;
+use App\Http\Controllers\Api\AchievementController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\CvController;
 use App\Http\Controllers\Api\DebtController;
+use App\Http\Controllers\Api\DocumentMergeController;
 use App\Http\Controllers\Api\DossierController;
 use App\Http\Controllers\Api\DossierFileController;
+use App\Http\Controllers\Api\ExperienceController;
 use App\Http\Controllers\Api\ExportController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\GoalController;
 use App\Http\Controllers\Api\HabitController;
+use App\Http\Controllers\Api\LanguageController;
 use App\Http\Controllers\Api\MealController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\PasskeyController;
@@ -20,6 +25,7 @@ use App\Http\Controllers\Api\ProjectStepController;
 use App\Http\Controllers\Api\PublicShareController;
 use App\Http\Controllers\Api\PushController;
 use App\Http\Controllers\Api\SecretController;
+use App\Http\Controllers\Api\SkillController;
 use App\Http\Controllers\Api\VaultController;
 use Illuminate\Support\Facades\Route;
 
@@ -107,6 +113,21 @@ Route::prefix('api')->group(function () use ($date) {
         Route::put('project-steps/{id}', [ProjectStepController::class, 'update'])->whereNumber('id');
         Route::delete('project-steps/{id}', [ProjectStepController::class, 'destroy'])->whereNumber('id');
 
+        Route::get('cv', [CvController::class, 'show']);
+        Route::get('cv/export', [CvController::class, 'export']);
+        Route::post('skills', [SkillController::class, 'store']);
+        Route::put('skills/{id}', [SkillController::class, 'update'])->whereNumber('id');
+        Route::delete('skills/{id}', [SkillController::class, 'destroy'])->whereNumber('id');
+        Route::post('languages', [LanguageController::class, 'store']);
+        Route::put('languages/{id}', [LanguageController::class, 'update'])->whereNumber('id');
+        Route::delete('languages/{id}', [LanguageController::class, 'destroy'])->whereNumber('id');
+        Route::post('experiences', [ExperienceController::class, 'store']);
+        Route::put('experiences/{id}', [ExperienceController::class, 'update'])->whereNumber('id');
+        Route::delete('experiences/{id}', [ExperienceController::class, 'destroy'])->whereNumber('id');
+        Route::post('achievements', [AchievementController::class, 'store']);
+        Route::put('achievements/{id}', [AchievementController::class, 'update'])->whereNumber('id');
+        Route::delete('achievements/{id}', [AchievementController::class, 'destroy'])->whereNumber('id');
+
         Route::get('passkeys', [PasskeyController::class, 'index']);
         Route::post('passkeys/options', [PasskeyController::class, 'registerOptions']);
         Route::post('passkeys', [PasskeyController::class, 'register']);
@@ -141,6 +162,9 @@ Route::prefix('api')->group(function () use ($date) {
             Route::delete('dossier-file-shares/{id}', [DossierFileController::class, 'shareDestroy'])->whereNumber('id');
 
             Route::post('export', [ExportController::class, 'store']);
+
+            // Fusionne plusieurs fichiers (images et PDF) d'un ou plusieurs dossiers en un seul PDF téléchargeable.
+            Route::post('documents/fusionner', [DocumentMergeController::class, 'store']);
         });
 
         Route::get('push/key', [PushController::class, 'key']);

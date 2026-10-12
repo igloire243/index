@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Dossier;
 use App\Models\Habit;
 use App\Models\Project;
 use App\Models\User;
@@ -15,7 +16,7 @@ class SendReminders extends Command
 {
     protected $signature = 'reseau:send-reminders';
 
-    protected $description = "Envoie les rappels d'habitudes dont l'heure est passée et les échéances de projets proches (à lancer chaque minute).";
+    protected $description = "Envoie les rappels d'habitudes dont l'heure est passée, les échéances de projets et l'expiration prochaine de documents (à lancer chaque minute).";
 
     public function handle(PushSender $sender): int
     {
@@ -74,6 +75,7 @@ class SendReminders extends Command
             }
 
             $sent += $this->sendProjectReminders($sender, $user, $now);
+            $sent += $this->sendDocumentReminders($sender, $user, $now);
         });
 
         $this->info("$sent rappel(s) envoyé(s).");
@@ -121,6 +123,53 @@ class SendReminders extends Command
 
         if ($delivered) {
             Project::whereIn('id', $due->pluck('id'))->update(['reminder_sent_for' => DB::raw('target_date')]);
+        }
+
+        return $delivered ? $due->count() : 0;
+    }
+
+    /**
+     * Un rappel, une fois, pour chaque document personnel dont l'échéance (passeport, carte d'identité, permis…)
+     * arrive dans les 30 prochains jours. `reminder_sent_for` empêche de le renvoyer tant que l'échéance ne change
+     * pas (voir DossierController) — même mécanisme que pour les projets.
+     */
+    private function sendDocumentReminders(PushSender $sender, User $user, Carbon $now): int
+    {
+        $today = $now->toDateString();
+        $horizon = $now->copy()->addDays(30)->toDateString();
+
+        $due = $user->dossiers()
+            ->whereNotNull('category')
+            ->whereBetween('expiry_date', [$today, $horizon])
+            ->where(fn ($q) => $q->whereNull('reminder_sent_for')->orWhereColumn('reminder_sent_for', '!=', 'expiry_date'))
+            ->get();
+
+        if ($due->isEmpty()) {
+            return 0;
+        }
+
+        $delivered = false;
+        foreach ($user->pushSubscriptions as $subscription) {
+            foreach ($due as $document) {
+                $days = (int) $now->copy()->startOfDay()->diffInDays($document->expiry_date, false);
+                $payload = [
+                    'title' => $days <= 0 ? 'Document expiré' : ($days === 1 ? 'Expire demain' : "Expire dans $days jours"),
+                    'body' => $document->title,
+                    'url' => '/coffre/'.$document->id,
+                    'tag' => 'document-'.$document->id,
+                ];
+                $result = $sender->send($subscription, $payload);
+                $delivered = $delivered || $result === PushSender::SENT;
+                if ($result === PushSender::GONE) {
+                    $subscription->delete();
+
+                    break;
+                }
+            }
+        }
+
+        if ($delivered) {
+            Dossier::whereIn('id', $due->pluck('id'))->update(['reminder_sent_for' => DB::raw('expiry_date')]);
         }
 
         return $delivered ? $due->count() : 0;
