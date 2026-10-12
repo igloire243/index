@@ -68,6 +68,22 @@ class DeploiementTest extends TestCase
         $this->assertFileExists($this->dest.'/autre.txt');
     }
 
+    public function test_a_failed_migration_is_not_marked_as_processed(): void
+    {
+        File::put($this->depot.'/VERSION', 'v1 migrer=1');
+        // Un faux « artisan » : échoue sur `migrate`, réussirait sur tout le reste.
+        File::put($this->dest.'/artisan', "<?php exit(\$argv[1] === 'migrate' ? 1 : 0);\n");
+
+        $this->artisan('deploiement:finaliser')->assertFailed()->expectsOutputToContain('migration a échoué');
+
+        $this->assertFileDoesNotExist($this->dest.'/storage/app/version-traitee', 'retentée à la minute suivante, jamais oubliée');
+
+        // La minute suivante, avec un vrai artisan : tout se termine normalement, pas de doublon de traitement.
+        File::put($this->dest.'/artisan', "<?php exit(0);\n");
+        $this->artisan('deploiement:finaliser')->assertSuccessful()->expectsOutputToContain('Déploiement finalisé');
+        $this->assertSame('v1 migrer=1', File::get($this->dest.'/storage/app/version-traitee'));
+    }
+
     public function test_cron_and_bootstrap_scripts_refuse_the_web(): void
     {
         foreach (['cron.php', 'amorcage.php'] as $script) {
