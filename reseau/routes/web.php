@@ -16,12 +16,15 @@ use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\GoalController;
 use App\Http\Controllers\Api\HabitController;
 use App\Http\Controllers\Api\LanguageController;
+use App\Http\Controllers\Api\LifeGoalController;
+use App\Http\Controllers\Api\LifeGoalShareController;
 use App\Http\Controllers\Api\MealController;
 use App\Http\Controllers\Api\MeasurementController;
 use App\Http\Controllers\Api\PasskeyController;
 use App\Http\Controllers\Api\ProgramController;
 use App\Http\Controllers\Api\ProjectController;
 use App\Http\Controllers\Api\ProjectStepController;
+use App\Http\Controllers\Api\PublicLifeGoalController;
 use App\Http\Controllers\Api\PublicShareController;
 use App\Http\Controllers\Api\PushController;
 use App\Http\Controllers\Api\SecretController;
@@ -41,6 +44,10 @@ Route::prefix('api')->group(function () use ($date) {
     Route::middleware('throttle:30,1')->group(function () {
         Route::get('partage/{token}', [PublicShareController::class, 'show']);
         Route::get('partage/{token}/contenu', [PublicShareController::class, 'content']);
+
+        Route::get('partage-vie/{token}', [PublicLifeGoalController::class, 'show']);
+        Route::put('partage-vie/{token}/nom', [PublicLifeGoalController::class, 'setName']);
+        Route::put('partage-vie/{token}/accomplissements/{lifeGoalId}', [PublicLifeGoalController::class, 'answer'])->whereNumber('lifeGoalId');
     });
 
     Route::middleware('auth')->group(function () use ($date) {
@@ -127,6 +134,17 @@ Route::prefix('api')->group(function () use ($date) {
         Route::post('achievements', [AchievementController::class, 'store']);
         Route::put('achievements/{id}', [AchievementController::class, 'update'])->whereNumber('id');
         Route::delete('achievements/{id}', [AchievementController::class, 'destroy'])->whereNumber('id');
+
+        Route::get('life-goals', [LifeGoalController::class, 'index']);
+        Route::post('life-goals/seed', [LifeGoalController::class, 'seed']);
+        Route::post('life-goals', [LifeGoalController::class, 'store']);
+        Route::put('life-goals/{id}', [LifeGoalController::class, 'update'])->whereNumber('id');
+        Route::delete('life-goals/{id}', [LifeGoalController::class, 'destroy'])->whereNumber('id');
+
+        Route::get('life-goal-shares', [LifeGoalShareController::class, 'index']);
+        Route::post('life-goal-shares', [LifeGoalShareController::class, 'store']);
+        Route::get('life-goal-shares/{id}', [LifeGoalShareController::class, 'show'])->whereNumber('id');
+        Route::delete('life-goal-shares/{id}', [LifeGoalShareController::class, 'destroy'])->whereNumber('id');
 
         Route::get('passkeys', [PasskeyController::class, 'index']);
         Route::post('passkeys/options', [PasskeyController::class, 'registerOptions']);

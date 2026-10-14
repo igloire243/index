@@ -112,6 +112,16 @@ class User extends Authenticatable
         return $this->hasMany(Achievement::class);
     }
 
+    public function lifeGoals(): HasMany
+    {
+        return $this->hasMany(LifeGoal::class);
+    }
+
+    public function lifeGoalShares(): HasMany
+    {
+        return $this->hasMany(LifeGoalShare::class);
+    }
+
     public function passkeys(): HasMany
     {
         return $this->hasMany(Passkey::class);
