@@ -4,6 +4,17 @@
  */
 export const CHANGELOG = [
     {
+        id: '2026-10-14-accomplissements',
+        date: '2026-10-14',
+        title: 'Accomplissements de vie',
+        items: [
+            'Un nouvel onglet « Accomplissements » dans le Coach : une liste de jalons de vie classée par tranche d’âge (avant 12 ans, avant 18 ans… jusqu’à « un jour, sans âge précis »), dans tous les domaines (éducation, carrière, finances, famille, spiritualité, santé, voyage, communauté…).',
+            'Une liste de départ de 62 suggestions, mêlant réalités congolaises (diplôme d’État, parcelle, dot…) et jalons universels — à garder, retirer ou compléter avec ses propres objectifs.',
+            'Un accomplissement peut être lié à l’un de ses projets en cours : sa progression s’affiche directement, sans dupliquer le suivi.',
+            'Le partage à deux sens : un lien montre tes propres accomplissements et permet à la personne de cocher les siens (fait, prévu, jamais pensé), sans créer de compte — tu consultes ensuite ses réponses.',
+        ],
+    },
+    {
         id: '2026-10-12-cv-documents',
         date: '2026-10-12',
         title: 'CV et documents personnels',

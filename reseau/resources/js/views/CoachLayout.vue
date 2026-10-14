@@ -11,6 +11,7 @@ const onProjects = () => route.name === 'coach-projets' || route.name === 'coach
             <RouterLink to="/coach" class="chip" :class="{ 'chip-on': route.name === 'coach' }" :aria-current="route.name === 'coach' ? 'page' : undefined">Suggestions</RouterLink>
             <RouterLink to="/coach/projets" class="chip" :class="{ 'chip-on': onProjects() }" :aria-current="onProjects() ? 'page' : undefined">Projets</RouterLink>
             <RouterLink to="/coach/cv" class="chip" :class="{ 'chip-on': route.name === 'coach-cv' }" :aria-current="route.name === 'coach-cv' ? 'page' : undefined">CV</RouterLink>
+            <RouterLink to="/coach/accomplissements" class="chip" :class="{ 'chip-on': route.name === 'coach-accomplissements' }" :aria-current="route.name === 'coach-accomplissements' ? 'page' : undefined">Accomplissements</RouterLink>
         </nav>
 
         <RouterView v-slot="{ Component }">
