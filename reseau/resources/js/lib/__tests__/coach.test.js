@@ -36,7 +36,7 @@ describe('buildSuggestions', () => {
     });
 
     it('met en tête un service à rendre', () => {
-        const list = buildSuggestions([contact({ id: 3, favor: 'owe' }), contact({ id: 4, name: 'Paul', last_contact: ago(100) })]);
+        const list = buildSuggestions([contact({ id: 3, favor: 'owe' }), contact({ id: 4, name: 'Paul', last_contact: ago(100) })], { today: '2026-10-12' });
         expect(list[0].id).toBe('owe:3');
     });
 

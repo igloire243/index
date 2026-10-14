@@ -27,6 +27,7 @@ export const router = createRouter({
                 { path: 'projets', name: 'coach-projets', component: () => import('./views/ProjectsView.vue') },
                 { path: 'projets/:id(\\d+)', name: 'coach-projet', component: () => import('./views/ProjectView.vue') },
                 { path: 'cv', name: 'coach-cv', component: () => import('./views/CvView.vue') },
+                { path: 'accomplissements', name: 'coach-accomplissements', component: () => import('./views/LifeGoalsView.vue') },
             ],
         },
         {
@@ -70,6 +71,7 @@ export const router = createRouter({
         { path: '/recherche', name: 'recherche', component: () => import('./views/SearchView.vue'), meta: { title: 'Recherche' } },
         // Lien de partage public : accessible sans compte, le jeton dans l'URL est la seule preuve d'accès.
         { path: '/partage/:token', name: 'partage', component: () => import('./views/ShareView.vue'), meta: { title: 'Document partagé', public: true } },
+        { path: '/accomplissements/:token', name: 'partage-vie', component: () => import('./views/PublicLifeGoalsView.vue'), meta: { title: 'Accomplissements partagés', public: true } },
         { path: '/:pathMatch(.*)*', redirect: '/contacts' },
     ],
     scrollBehavior: () => ({ top: 0 }),
