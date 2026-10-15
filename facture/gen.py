@@ -29,15 +29,15 @@ td{{padding:4mm 3mm;border-bottom:1px solid #e3e0f2;vertical-align:top}}td small
 .note b{{color:#8a5a00}}.foot{{position:absolute;left:16mm;right:16mm;bottom:10mm;font-size:8.5pt;color:#6b7194;text-align:center;border-top:1px solid #e3e0f2;padding-top:3mm}}
 </style></head><body>
 <div class=top><div><h1>FACTURE</h1><div class=brand>APHMEDI</div></div>
-<div class=meta><span class=draft>BROUILLON</span><br>N° <span class=ph>[à compléter]</span><br>Date : {DATE}<br>Échéance : <span class=ph>[à compléter]</span></div></div>
-<div class=parties><div class=box><h3>ÉMETTEUR</h3><span class=ph>[Nom / société, adresse, N° d'identification, contact]</span></div>
-<div class=box><h3>CLIENT</h3><span class=ph>[Nom / société, adresse, contact]</span></div></div>
+<div class=meta>N° <b>FAC-2026-1015-001</b><br>Date : {DATE}<br>Échéance : 15 novembre 2026<br><small style="color:#6b7194">(paiement sous 1 mois)</small></div></div>
+<div class=parties><div class=box><h3>ÉMETTEUR</h3><b>Gloire ILUNGA</b><br>Développeur et ingénieur logiciel<br>gloireilunga703@gmail.com<br><span class=ph>[Adresse / téléphone, facultatif]</span></div>
+<div class=box><h3>CLIENT</h3><b>Entreprise APHMEDI</b><br>À l'attention de M. Joseph MUKUNA<br>(responsable du paiement)<br><span class=ph>[Adresse / contact, facultatif]</span></div></div>
 <table><tr><th>DÉSIGNATION</th><th class=c>PÉRIODE</th><th class=r>PRIX UNIT. HT</th><th class=r>TOTAL HT (EUR)</th><th class=r>TOTAL HT (USD)</th></tr>{rows}</table>
 <div class=tot><div><span>Total HT</span><span>{fe(te)}</span></div><div><span>TVA</span><span class=ph>selon pays</span></div>
 <div class=g><span>TOTAL HT en USD</span><span>{fu(tu)}</span></div></div>
 <div class=note><b>Taux de conversion :</b> 1 € = {str(RATE).replace('.',',')} $ (taux indicatif, à vérifier avant envoi). Les prix en euros sont ceux de la proposition d'hébergement APHMEDI d'octobre 2026 (LWS), hors taxes ; le prix Starter est à confirmer sur lws.fr.<br>
 <b>Année suivante :</b> passage prévu à une formule d'hébergement supérieure. Le renouvellement du nom de domaine est estimé à environ 9,99 € HT/an ; les tarifs de la nouvelle formule seront établis sur une facture distincte.</div>
-<div class=foot>APHMEDI · Facture d'hébergement et de nom de domaine · aphmedi.com</div></body></html>"""
+<div class=foot>APHMEDI · Facture d'hébergement (LWS) et de nom de domaine · aphmedi.com</div></body></html>"""
 open("facture.html","w").write(html)
 from playwright.sync_api import sync_playwright
 import glob
